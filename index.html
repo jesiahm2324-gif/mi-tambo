@@ -410,7 +410,7 @@ function detail(a){
   $("del").onclick=()=>{if(confirm("¿Eliminar este animal y su historial?")){S.animals=S.animals.filter(x=>x!==a);S.events=S.events.filter(e=>e.aid!==a.id);S.repro=S.repro.filter(e=>e.aid!==a.id);save();close();render()}};
   $("cx").onclick=close}
 document.addEventListener("click",e=>{
-  if(e.target.closest("a"))return;
+  {const L=e.target.closest("a");if(L&&!L.dataset.t)return}
   const t=e.target.closest("[data-t]");if(t){e.preventDefault();tab=t.dataset.t;render();return}
   const a=e.target.closest("[data-a]");if(a){detail(byId(a.dataset.a));return}
   if(e.target.closest("[data-milk]")){fLeche(today());return}
