@@ -271,19 +271,44 @@ function hvRows(a){const P=S.repro.filter(r=>r.aid===a.id&&r.type==="Parto").sor
   return [["N.º de arete","#"+a.tag],["Sexo",sexo(a)],["Edad",edad(a.born)||"—"],["Categoría",a.cat],["Número de partos",P.length],["Último parto",l?fmt(l.date)+" ("+dd(today(),l.date)+" d)":"—"],["Intervalo entre partos",iep?iep+" d":"—"],["Estado reproductivo",s.st+(s.due?" · parto "+fmt(s.due):"")],["Leche prom. 30 días",M?M.toFixed(1)+" L/día":"—"],["Madre",a.mom?"#"+a.mom:"—"],["Abuelos maternos",m?(m.mom||"?")+" / "+(m.dad||"?"):"—"],["Padre",a.dad||"—"],["Crías",cr||"—"]]}
 const hv=a=>`<h2>Hoja de vida</h2><table class="rt">${hvRows(a).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join("")}</table>`;
 const PCSS="body{font-family:-apple-system,Arial,sans-serif;margin:18px;color:#111}h1{font-size:20px}h2{font-size:13px;text-transform:uppercase;color:#2f7d4f;border-bottom:2px solid #2f7d4f;margin-top:16px}table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:4px 6px;border-bottom:1px solid #ddd;text-align:left}.rt td:last-child{text-align:right;font-weight:600}";
+function mkPDF(items){const W=595,H=842,M=40,pages=[];let cur=[],y=H-M;
+  const raw=s=>String(s==null?"":s).replace(/[—–−]/g,"-").replace(/›/g,">").replace(/€/g,"EUR").replace(/₲/g,"Gs").replace(/[^\x20-\x7e\xa0-\xff]/g,"?");
+  const E=s=>s.replace(/[\\()]/g,"\\$&"),np=()=>{pages.push(cur.join("\n"));cur=[];y=H-M};
+  items.forEach(it=>{const sz=it.sz||10,lh=sz+5,xs=it.x||[M];if(y-lh<M)np();y-=lh;
+    (it.c||[]).forEach((t,i)=>{const nx=xs[i+1]||W-M,mx=Math.max(3,Math.floor((nx-xs[i]-4)/(sz*.52)));let q=raw(t);if(q.length>mx)q=q.slice(0,mx-1)+".";cur.push(`BT /F${it.b?2:1} ${sz} Tf ${xs[i]} ${y} Td (${E(q)}) Tj ET`)});
+    if(it.line)cur.push(`0.5 w ${M} ${y-3} m ${W-M} ${y-3} l S`)});
+  np();let out="%PDF-1.4\n";const offs=[],o=t=>{offs.push(out.length);out+=t};
+  o("1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n");
+  o(`2 0 obj<</Type/Pages/Kids[${pages.map((_,i)=>`${5+i*2} 0 R`).join(" ")}]/Count ${pages.length}>>endobj\n`);
+  o("3 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>endobj\n");
+  o("4 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold/Encoding/WinAnsiEncoding>>endobj\n");
+  pages.forEach((c,i)=>{o(`${5+i*2} 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${W} ${H}]/Resources<</Font<</F1 3 0 R/F2 4 0 R>>>>/Contents ${6+i*2} 0 R>>endobj\n`);o(`${6+i*2} 0 obj<</Length ${c.length}>>stream\n${c}\nendstream endobj\n`)});
+  const xr=out.length;out+=`xref\n0 ${offs.length+1}\n0000000000 65535 f \n`+offs.map(x=>String(x).padStart(10,"0")+" 00000 n \n").join("")+`trailer<</Size ${offs.length+1}/Root 1 0 R>>\nstartxref\n${xr}\n%%EOF`;
+  const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;return u}
+async function sharePDF(name,items){const f=new File([mkPDF(items)],name,{type:"application/pdf"});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e&&e.name==="AbortError")return}
+  try{const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}catch(e){alert("No se pudo generar el PDF en este dispositivo.")}}
+const pdfHead=t=>{const p=P(),r=[];if(p.name)r.push({c:[p.name],b:1,sz:15});const i=pinfo(p,1);if(i)r.push({c:[i],sz:9});r.push({c:[t],b:1,sz:13},{c:["Fecha: "+fmt(today())],sz:9,line:1});return r};
+const pdfSec=t=>[{c:[""],sz:4},{c:[t.toUpperCase()],b:1,sz:10,line:1}];
+function pdfList(){const A=[...act()].sort((a,b)=>a.tag.localeCompare(b.tag,"es",{numeric:true})),x=[40,105,190,265,300,345,425,490];
+  sharePDF("listado-animales-"+today()+".pdf",[...pdfHead("Listado de animales"),{c:["Arete","Nombre","Categoría","Sexo","Edad","Dueño","Madre","Padre"],x,b:1,sz:8,line:1},...A.map(a=>({c:[a.tag,a.name,a.cat,sexo(a),edad(a.born),a.owner,a.mom,a.dad],x,sz:8})),{c:["Total de animales: "+A.length],b:1,sz:10}])}
+function pdfCV(a){const rp=S.repro.filter(e=>e.aid===a.id).sort((p,q)=>p.date.localeCompare(q.date)),ev=S.events.filter(e=>e.aid===a.id||e.aid==="ALL").sort((p,q)=>p.date.localeCompare(q.date)),x=[40,110,250];
+  sharePDF("hoja-de-vida-"+a.tag+".pdf",[...pdfHead("Hoja de vida: "+raw(a)+(a.owner?"  (Dueño: "+a.owner+")":"")),...hvRows(a).map(r=>({c:[r[0],String(r[1])],x:[40,200],sz:10})),...pdfSec("Eventos reproductivos"),...(rp.length?rp.map(e=>({c:[fmt(e.date),e.type+(e.result?" "+e.result:""),(e.detail||"")+(e.due?" - parto prob. "+fmt(e.due):"")],x,sz:9})):[{c:["Sin registros"],sz:9}]),...pdfSec("Sanidad"),...(ev.length?ev.map(e=>({c:[fmt(e.date),e.type,(e.product||"")+(e.next?" - próx. "+fmt(e.next):"")],x,sz:9})):[{c:["Sin registros"],sz:9}])])}
+function pdfER(per,lab){sharePDF("estado-de-resultados-"+today()+".pdf",[...pdfHead("Estado de resultados - "+lab),...erRows(per).map(([a,b,t,i])=>({c:[(i?"    ":"")+a,b],x:[40,430],b:t,sz:11,line:t&&a.startsWith("Total")}))])}
 function printDoc(body,title){const f=document.createElement("iframe");f.style.cssText="position:fixed;width:0;height:0;border:0";document.body.appendChild(f);const d=f.contentWindow.document;d.open();d.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>${PCSS}</style></head><body>${body}</body></html>`);d.close();setTimeout(()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),90000)},500)}
 function listDoc(){const A=[...act()].sort((a,b)=>a.tag.localeCompare(b.tag,"es",{numeric:true}));
   return profHtml()+`<h1>Listado de animales · ${fmt(today())}</h1><table><tr><th>Arete</th><th>Nombre</th><th>Categoría</th><th>Sexo</th><th>Edad</th><th>Dueño</th><th>Madre</th><th>Padre</th></tr>${A.map(a=>`<tr><td>${esc(a.tag)}</td><td>${esc(a.name)}</td><td>${a.cat}</td><td>${sexo(a)}</td><td>${edad(a.born)}</td><td>${esc(a.owner)}</td><td>${esc(a.mom)}</td><td>${esc(a.dad)}</td></tr>`).join("")}</table><p><b>Total: ${A.length}</b></p>`}
 function cvDoc(a){const T=(arr,f)=>arr.length?`<table>${arr.map(f).join("")}</table>`:"<p>Sin registros.</p>";
   const rp=S.repro.filter(e=>e.aid===a.id).sort((x,y)=>x.date.localeCompare(y.date)),ev=S.events.filter(e=>e.aid===a.id||e.aid==="ALL").sort((x,y)=>x.date.localeCompare(y.date));
   return profHtml()+(a.photo?`<img src="${a.photo}" style="width:110px;border-radius:8px;float:right">`:"")+`<h1>Hoja de vida · ${esc(raw(a))}</h1>${a.owner?"<p>Dueño: "+esc(a.owner)+"</p>":""}${hv(a)}<h2>Eventos reproductivos</h2>${T(rp,e=>`<tr><td>${fmt(e.date)}</td><td>${e.type}${e.result?" · "+e.result:""}</td><td>${esc(e.detail)}${e.due?" · parto prob. "+fmt(e.due):""}</td></tr>`)}<h2>Sanidad</h2>${T(ev,e=>`<tr><td>${fmt(e.date)}</td><td>${e.type}</td><td>${esc(e.product)}${e.next?" · próx. "+fmt(e.next):""}</td></tr>`)}`}
-function erHtml(per){const ok=d=>per==="all"||d.startsWith(per==="mes"?fm:fm.slice(0,4)),F=S.fin.filter(f=>ok(f.date)),g=k=>{const o={};F.filter(f=>f.kind===k).forEach(f=>o[f.cat]=(o[f.cat]||0)+f.amount);return Object.entries(o).sort((a,b)=>b[1]-a[1])};
+function erRows(per){const ok=d=>per==="all"||d.startsWith(per==="mes"?fm:fm.slice(0,4)),F=S.fin.filter(f=>ok(f.date)),g=k=>{const o={};F.filter(f=>f.kind===k).forEach(f=>o[f.cat]=(o[f.cat]||0)+f.amount);return Object.entries(o).sort((a,b)=>b[1]-a[1])};
   const I=g("ingreso"),G=g("gasto"),ti=I.reduce((x,r)=>x+r[1],0),tg=G.reduce((x,r)=>x+r[1],0),n=ti-tg,L=S.milk.filter(m=>ok(m.date)).reduce((x,m)=>x+m.l,0);
-  const row=(a,b,t,i)=>`<tr${t?' style="border-top:2px solid;font-weight:700"':""}><td${i?' style="padding-left:16px"':""}>${esc(a)}</td><td>${b}</td></tr>`;
-  return `<table class="rt">${row("INGRESOS","")}${I.map(r=>row(r[0],money(r[1]),0,1)).join("")}${row("Total ingresos",money(ti),1)}${row("GASTOS","")}${G.map(r=>row(r[0],money(r[1]),0,1)).join("")}${row("Total gastos",money(tg),1)}${row(n>=0?"UTILIDAD NETA":"PÉRDIDA NETA",money(n),1)}${ti?row("Margen neto",(n/ti*100).toFixed(1)+" %"):""}${L?row("Litros registrados",L.toFixed(0))+(tg?row("Costo por litro",money(tg/L,2)):""):""}</table>`}
+  const r=[["INGRESOS","",1,0],...I.map(x=>[x[0],money(x[1]),0,1]),["Total ingresos",money(ti),1,0],["GASTOS","",1,0],...G.map(x=>[x[0],money(x[1]),0,1]),["Total gastos",money(tg),1,0],[n>=0?"UTILIDAD NETA":"PÉRDIDA NETA",money(n),1,0]];
+  if(ti)r.push(["Margen neto",(n/ti*100).toFixed(1)+" %",0,0]);if(L){r.push(["Litros registrados",L.toFixed(0),0,0]);if(tg)r.push(["Costo por litro",money(tg/L,2),0,0])}return r}
+const erHtml=per=>`<table class="rt">${erRows(per).map(([a,b,t,i])=>`<tr style="${t?"font-weight:700":""}"><td style="padding-left:${i?16:0}px">${esc(a)}</td><td>${b}</td></tr>`).join("")}</table>`;
 function fER(per){const lab={mes:mname(fm),anio:"Año "+fm.slice(0,4),all:"Todo el historial"};
   sheet(`<h1>Estado de resultados</h1><select id="e_p">${Object.entries(lab).map(([k,v])=>`<option value="${k}" ${k===per?"selected":""}>${v}</option>`).join("")}</select>${erHtml(per)}<br><button id="ok">📄 Guardar / imprimir PDF</button><br><br><button class="s" id="cx">Cerrar</button>`);
-  $("e_p").onchange=e=>fER(e.target.value);$("ok").onclick=()=>printDoc(profHtml()+`<h1>Estado de resultados</h1><p>${lab[per]}</p>`+erHtml(per),"Estado de resultados");$("cx").onclick=close}
+  $("e_p").onchange=e=>fER(e.target.value);$("ok").onclick=()=>pdfER(per,lab[per]);$("cx").onclick=close}
 function fLeche(d){const V=act().filter(a=>a.cat==="Vaca en ordeñe"),ex=x=>S.milk.find(m=>m.aid===x&&m.date===d),tot=S.milk.filter(m=>m.date===d).reduce((x,m)=>x+m.l,0);
   sheet(`<h1>🥛 Producción de leche</h1><label>Fecha</label><input type="date" id="l_d" value="${d}"><p class="mu">Litros del día: ${tot} · ${V.length} vacas en ordeñe</p>${V.map(a=>`<div class="row" style="margin-bottom:6px"><span>${nm(a)}</span><input data-l="${a.id}" inputmode="decimal" placeholder="Litros" style="width:90px;margin:0" value="${ex(a.id)?ex(a.id).l:""}"></div>`).join("")||'<p class="mu">No hay vacas en ordeñe.</p>'}<br><button id="ok">Guardar</button><br><br><button class="s" id="cx">Cerrar</button>`);
   $("l_d").onchange=e=>fLeche(e.target.value||d);
@@ -406,7 +431,7 @@ function detail(a){
   sheet(`${a.photo?`<img src="${a.photo}" style="width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin-bottom:10px">`:""}<h1>${nm(a)}</h1><p class="mu">${a.cat}${a.born?" · Nació "+fmt(a.born):""}${a.breed?" · "+esc(a.breed):""}${a.owner?" · Dueño: "+esc(a.owner):""}</p>
   ${hv(a)}<h2>Reproducción · ${st.st}${st.due?" · parto "+fmt(st.due):""}</h2>${rp.map(e=>`<div class="card"><div class="row"><span class="b">${e.type}${e.result?" · "+e.result:""}</span><span class="mu">${fmt(e.date)}</span></div><div class="mu">${esc(e.detail)}${e.note?" · "+esc(e.note):""}</div></div>`).join("")||'<p class="mu">Sin eventos.</p>'}<h2>Historial sanitario</h2>${ev.map(e=>`<div class="card"><div class="row"><span class="b">${e.type}</span><span class="mu">${fmt(e.date)}</span></div><div class="mu">${esc(e.product)}${e.note?" · "+esc(e.note):""}</div></div>`).join("")||'<p class="mu">Sin registros.</p>'}
   <button id="pdfv">📄 Hoja de vida (PDF)</button><br><br><button id="ed">Editar</button><br><br><button class="d" id="del">Eliminar animal</button><br><br><button class="s" id="cx">Cerrar</button>`);
-  $("ed").onclick=()=>fAnimal(a);$("pdfv").onclick=()=>printDoc(cvDoc(a),"Hoja de vida "+a.tag);
+  $("ed").onclick=()=>fAnimal(a);$("pdfv").onclick=()=>pdfCV(a);
   $("del").onclick=()=>{if(confirm("¿Eliminar este animal y su historial?")){S.animals=S.animals.filter(x=>x!==a);S.events=S.events.filter(e=>e.aid!==a.id);S.repro=S.repro.filter(e=>e.aid!==a.id);save();close();render()}};
   $("cx").onclick=close}
 document.addEventListener("click",e=>{
@@ -414,7 +439,7 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("[data-t]");if(t){e.preventDefault();tab=t.dataset.t;render();return}
   const a=e.target.closest("[data-a]");if(a){detail(byId(a.dataset.a));return}
   if(e.target.closest("[data-milk]")){fLeche(today());return}
-  if(e.target.closest("[data-pl]")){printDoc(listDoc(),"Listado de animales");return}
+  if(e.target.closest("[data-pl]")){pdfList();return}
   if(e.target.closest("[data-er]")){fER("mes");return}
   if(e.target.closest("[data-prof2]")){fProf();return}
   const pe=e.target.closest("[data-pe]");if(pe){const p=S.meta.people.find(x=>x.id===pe.dataset.pe);fPerson(p.kind,p);return}
