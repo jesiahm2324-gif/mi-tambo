@@ -44,7 +44,11 @@ nav a.on::after{content:"";position:absolute;left:30%;right:30%;bottom:0;height:
 @media(prefers-reduced-motion:reduce){#sh>div{animation:none}}
 .tag{display:inline-block;border:1px solid var(--bd);border-radius:20px;padding:2px 10px;font-size:12px;margin-left:6px;color:var(--mu)}
 .rt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.rt td{padding:7px 0;border-bottom:1px solid var(--bd)}.rt td:last-child{text-align:right;font-weight:600}
-.ph{width:44px;height:44px;border-radius:50%;object-fit:cover;border:1px solid var(--bd)}
+.ph{width:44px;height:44px;border-radius:50%;object-fit:cover;border:1px solid var(--bd);flex:none}
+.ph.lg{width:58px;height:58px;border-radius:50%;object-position:50% 35%}
+.ph0{display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--bg);filter:grayscale(1);opacity:.6}
+.ac{display:flex;gap:12px;align-items:center;padding:9px 12px;margin-bottom:7px}.am{flex:1;min-width:0}
+.an{font:600 17px/1.15 var(--sf)}.ar{font-size:14px;font-weight:600;margin-top:1px;font-variant-numeric:tabular-nums}.ae{font-size:13px;color:var(--pr)}.sm{font-size:12.5px;margin-top:4px}
 [data-prof] .ph{box-shadow:0 0 0 2px var(--ac);border:0}
 .gear{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:14px;width:auto;padding:7px 11px;border-radius:20px;background:var(--card);color:var(--tx);border:1px solid var(--bd);z-index:5;font-size:17px;box-shadow:var(--sh)}
 .g{display:grid;grid-template-columns:1fr 1fr;gap:9px}.g .card{margin:0}.g .b{font-family:var(--sf)}
@@ -113,7 +117,7 @@ function vRebano(){
 function vAnimales(){
   const l=act().filter(a=>(a.tag+" "+a.name+" "+a.cat+" "+(a.owner||"")).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>a.tag.localeCompare(b.tag,"es",{numeric:true}));
   return `<h1>Animales</h1><button class="s" data-pl>📄 Listado en PDF</button><br><br><input id="q" placeholder="Buscar caravana, nombre o categoría" value="${esc(q)}">
-  ${l.map(a=>`<div class="card" data-a="${a.id}"><div class="row"><span class="row" style="justify-content:flex-start;gap:10px">${a.photo?`<img class="ph" src="${a.photo}">`:""}<span class="b">${nm(a)}</span></span><span class="tag">${a.cat}</span></div><div class="mu">${a.born?edad(a.born)+" · Nació "+fmt(a.born):"Sin fecha de nacimiento"}${a.breed?" · "+esc(a.breed):""}${a.owner?" · Dueño: "+esc(a.owner):""}${a.pot?" · Potrero: "+esc(a.pot):""}</div></div>`).join("")||'<p class="mu">No hay animales cargados.</p>'}`;
+  ${l.map(a=>`<div class="card ac" data-a="${a.id}">${a.photo?`<img class="ph lg" src="${a.photo}">`:'<div class="ph lg ph0">🐄</div>'}<div class="am"><div class="row"><span class="b an">${esc(a.name)||"Sin nombre"}${rs(a.id).st==="preñada"?" 🤰":""}</span><span class="tag">${a.cat}</span></div><div class="ar">Arete ${esc(a.tag)}</div><div class="ae">${a.born?edad(a.born):"Sin fecha de nacimiento"}</div></div></div>`).join("")||'<p class="mu">No hay animales cargados.</p>'}`;
 }
 function vSanidad(){
   const t=today(),r=S.events.filter(e=>until(e)&&until(e)>=t);
@@ -125,12 +129,14 @@ function vSanidad(){
 }
 const GEST=283,FEM=["Vaca en ordeñe","Vaca seca","Vaquillona"];
 const fem=()=>act().filter(a=>FEM.includes(a.cat));
-const addD=(d,n)=>{const x=new Date(d+"T00:00");x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)};
+const ymd=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");
+const addD=(d,n)=>{const x=new Date(d+"T00:00");x.setDate(x.getDate()+n);return ymd(x)};
+const addM=(d,n)=>{const x=new Date(d+"T00:00"),k=x.getDate();x.setMonth(x.getMonth()+n);if(x.getDate()!==k)x.setDate(0);return ymd(x)};
 const dd=(a,b)=>Math.round((new Date(a+"T00:00")-new Date(b+"T00:00"))/864e5);
 function rs(aid){let s={st:"sin datos"};
   S.repro.filter(r=>r.aid===aid).sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
     if(r.type==="Servicio")s={st:"servida",svc:r.date,lp:s.lp,bull:r.bull};
-    else if(r.type==="Diagnóstico")s=r.result==="Preñada"?{...s,st:"preñada",due:r.due||(s.svc?addD(s.svc,GEST):null)}:{st:"vacía",lp:s.lp};
+    else if(r.type==="Diagnóstico")s=r.result==="Preñada"?{...s,st:"preñada",due:r.due||(s.svc?addM(s.svc,9):null)}:{st:"vacía",lp:s.lp};
     else if(r.type==="Parto")s={st:"parida",lp:r.date};
     else if(r.type==="Aborto")s={st:"vacía",lp:s.lp}});
   return s}
@@ -149,13 +155,13 @@ function vRepro(){
   ${dg.length?`<h2>Para diagnosticar</h2>${dg.map(x=>c(x,"servida hace "+dd(t,x.s.svc)+" d",1)).join("")}`:""}
   ${sec.length?`<h2>Para secar (≤60 días al parto)</h2>${sec.map(x=>c(x,"parto "+fmt(x.s.due),1)).join("")}`:""}
   <h2>Próximos partos</h2>${pr.map(x=>{const r=dd(x.s.due,t);return c(x,r<=0?"¡Parto esperado!":fmt(x.s.due)+" · en "+r+" d",r<=15)}).join("")||'<p class="mu">Sin vacas preñadas con fecha.</p>'}
-  ${F.filter(x=>x.s.st==="preñada"&&!x.s.due).map(x=>c(x,"sin fecha de parto",1)).join("")}
+  ${F.filter(x=>x.s.st==="preñada"&&!x.s.due).map(x=>c(x,"sin fecha · tocá para cargarla",1)).join("")}
   <h2>Últimos eventos</h2>${l.map(e=>`<div class="card" data-r="${e.id}"><div class="row"><span class="b">${nm(byId(e.aid))}</span><span class="mu">${fmt(e.date)}</span></div><div>${e.type}${e.result?" · "+e.result:""}</div><div class="mu">${esc(e.detail)}${e.note?" · "+esc(e.note):""}</div>${e.due?`<div class="b" style="color:var(--pr)">Parto probable: ${fmt(e.due)}</div>`:""}</div>`).join("")||'<p class="mu">Sin eventos reproductivos.</p>'}`;
 }
 function fRepro(){
   const F=fem();if(!F.length)return alert("Primero cargá una vaca o vaquillona");
   const X={Servicio:`<label>Tipo</label><select id="x1">${opts(["Inseminación","Monta natural"])}</select><label>Toro / pajuela</label><input id="x2">`,
-  "Diagnóstico":`<label>Resultado</label><select id="x1">${opts(["Preñada","Vacía"])}</select><label>Método</label><select id="x2">${opts(["Tacto","Ecografía"])}</select><label>Fecha probable de parto (opcional: se calcula sola si hay un servicio registrado)</label><input type="date" id="x3">`,
+  "Diagnóstico":`<label>Resultado</label><select id="x1">${opts(["Preñada","Vacía"])}</select><label>Método</label><select id="x2">${opts(["Tacto","Ecografía"])}</select><label>Fecha en que se preñó (servicio o monta). Si ya registraste el servicio, se toma de ahí.</label><input type="date" id="x3">`,
   Parto:`<label>Cría</label><select id="x1">${opts(["Hembra","Macho","Mortinato"])}</select><label>Caravana de la cría</label><input id="x2"><label>Tipo de parto</label><select id="x3">${opts(["Normal","Asistido","Difícil"])}</select>`,Aborto:""};
   sheet(`<h1>Evento reproductivo</h1>
   <label>Vaca</label><select id="f_a">${F.map(a=>`<option value="${a.id}">#${esc(a.tag)} ${esc(a.name)}</option>`).join("")}</select>
@@ -168,13 +174,13 @@ function fRepro(){
     const x1=$("x1")?$("x1").value:"",x2=$("x2")?$("x2").value.trim():"",x3=$("x3")?$("x3").value:"";
     const r={id:uid(),aid:a.id,type,date:d,note:$("f_n").value.trim(),detail:"",result:""};
     if(type==="Servicio"){r.detail=x1+(x2?" · "+x2:"");r.bull=x2}
-    if(type==="Diagnóstico"){r.result=x1;r.detail=x2;if(x1==="Preñada"){const sv=S.repro.filter(z=>z.aid===a.id&&z.type==="Servicio"&&z.date<=d).sort((p,q)=>q.date.localeCompare(p.date))[0];r.due=$("x3").value||(sv?addD(sv.date,GEST):"")}}
+    if(type==="Diagnóstico"){r.result=x1;r.detail=x2;if(x1==="Preñada"){const sv=S.repro.filter(z=>z.aid===a.id&&z.type==="Servicio"&&z.date<=d).sort((p,q)=>q.date.localeCompare(p.date))[0];const pd=$("x3").value||(sv?sv.date:"");r.preg=pd;r.due=pd?addM(pd,9):""}}
     if(type==="Parto"){r.detail=x3+" · "+x1+(x2?" #"+x2:"");
       if(x1!=="Mortinato"&&x2){if(act().some(z=>z.tag===x2))return alert("Esa caravana ya existe");
         S.animals.push({id:uid(),tag:x2,name:"",cat:x1==="Hembra"?"Ternera":"Ternero",born:d,breed:"",mom:a.tag,dad:rs(a.id).bull||"",owner:a.owner||"",pot:a.pot||"",status:"activo"});
         S.moves.push({id:uid(),type:"Nacimiento",tag:x2,date:d,note:"Madre #"+a.tag})}
       a.cat="Vaca en ordeñe"}
-    S.repro.push(r);save();close();render();if(r.due)alert("Fecha probable de parto: "+fmt(r.due));else if(type==="Diagnóstico"&&x1==="Preñada")alert("Quedó registrada la preñez, pero sin fecha de parto: no hay un servicio previo. Registrá el servicio o cargá la fecha probable.")};
+    S.repro.push(r);save();close();render();if(r.due)alert("Fecha probable de parto: "+fmt(r.due));else if(type==="Diagnóstico"&&x1==="Preñada")alert("Quedó registrada la preñez, pero sin fecha de parto porque no hay un servicio previo. Entrá a la ficha de la vaca y tocá \"Fecha de preñez\" para cargarla.")};
   $("cx").onclick=close}
 const ING=["Venta de leche y lácteos","Venta de animales","Otros ingresos"],GAS=["Alimento","Sanidad y veterinario","Salario","Aguinaldo","Diezmos","Mano de obra","Combustible y energía","Mantenimiento","Compra de animales","Otros gastos"];
 let fm=today().slice(0,7);
@@ -285,7 +291,7 @@ function invRows(per){const t=today(),mm=S.moves.filter(x=>per==="all"||x.date.s
 function milk30(id){const t=today(),L=S.milk.filter(m=>m.aid===id&&dd(t,m.date)<=30&&dd(t,m.date)>=0);return L.length?L.reduce((x,m)=>x+m.l,0)/L.length:0}
 function hvRows(a){const P=S.repro.filter(r=>r.aid===a.id&&r.type==="Parto").sort((x,y)=>x.date.localeCompare(y.date)),s=rs(a.id),M=milk30(a.id),m=byTag(a.mom),cr=S.animals.filter(x=>x.mom===a.tag).map(x=>"#"+x.tag).join(", ");
   const iep=P.length>1?Math.round(dd(P[P.length-1].date,P[0].date)/(P.length-1)):0,l=P[P.length-1];
-  return [["N.º de arete","#"+a.tag],["Sexo",sexo(a)],["Edad",edad(a.born)||"—"],["Categoría",a.cat],["Potrero actual",a.pot||"—"],["Número de partos",P.length],["Último parto",l?fmt(l.date)+" ("+dd(today(),l.date)+" d)":"—"],["Intervalo entre partos",iep?iep+" d":"—"],["Estado reproductivo",s.st+(s.due?" · parto "+fmt(s.due):"")],["Leche prom. 30 días",M?M.toFixed(1)+" L/día":"—"],["Madre",a.mom?"#"+a.mom:"—"],["Abuelos maternos",m?(m.mom||"?")+" / "+(m.dad||"?"):"—"],["Padre",a.dad||"—"],["Crías",cr||"—"]]}
+  return [["N.º de arete","#"+a.tag],["Sexo",sexo(a)],["Edad",edad(a.born)||"—"],["Categoría",a.cat],["Potrero actual",a.pot||"—"],["Número de partos",P.length],["Último parto",l?fmt(l.date)+" ("+dd(today(),l.date)+" d)":"—"],["Intervalo entre partos",iep?iep+" d":"—"],["Estado reproductivo",s.st],...(s.st==="preñada"?[["Parto probable",s.due?fmt(s.due):"sin fecha"]]:[]),["Leche prom. 30 días",M?M.toFixed(1)+" L/día":"—"],["Madre",a.mom?"#"+a.mom:"—"],["Abuelos maternos",m?(m.mom||"?")+" / "+(m.dad||"?"):"—"],["Padre",a.dad||"—"],["Crías",cr||"—"]]}
 const hv=a=>`<h2>Hoja de vida</h2><table class="rt">${hvRows(a).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join("")}</table>`;
 const PCSS="body{font-family:-apple-system,Arial,sans-serif;margin:18px;color:#111}h1{font-size:20px}h2{font-size:13px;text-transform:uppercase;color:#2f7d4f;border-bottom:2px solid #2f7d4f;margin-top:16px}table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:4px 6px;border-bottom:1px solid #ddd;text-align:left}.rt td:last-child{text-align:right;font-weight:600}";
 function mkPDF(items,embed){const W=595,H=842,M=40,pages=[],imgs=[];let cur=[],y=H-M;
@@ -293,7 +299,7 @@ function mkPDF(items,embed){const W=595,H=842,M=40,pages=[],imgs=[];let cur=[],y
   const E=s=>s.replace(/[\\()]/g,"\\$&"),np=()=>{pages.push(cur.join("\n"));cur=[];y=H-M};
   const jpg=d=>{const b=atob(d.split(",")[1]),c=i=>b.charCodeAt(i);let i=2,w=1,h=1;while(i<b.length){if(c(i)!==255){i++;continue}const m=c(i+1);if(m>=192&&m<=207&&m!==196&&m!==200&&m!==204){h=c(i+5)*256+c(i+6);w=c(i+7)*256+c(i+8);break}i+=2+c(i+2)*256+c(i+3)}return{b,w,h}};
   items.forEach(it=>{
-    if(it.img){try{if(!/^data:image\/jpe?g/.test(it.img))return;const j=jpg(it.img),k0=Math.min((it.w||120)/j.w,170/j.h),pw=j.w*k0,ph=j.h*k0,k=imgs.push(j)-1;if(y-ph-8<M)np();y-=ph;cur.push(`q ${pw.toFixed(1)} 0 0 ${ph.toFixed(1)} ${M} ${y.toFixed(1)} cm /Im${k} Do Q`);y-=8}catch(e){}return}
+    if(it.img||it.img2){try{const A=[],add=(d,w,h,r)=>{if(!d||!/^data:image\/jpe?g/.test(d))return;const j=jpg(d),k0=Math.min(w/j.w,h/j.h);A.push({pw:j.w*k0,ph:j.h*k0,r,k:imgs.push(j)-1})};add(it.img,it.w||150,170,0);add(it.img2,it.w2||110,110,1);if(!A.length)return;const H2=Math.max(...A.map(a=>a.ph));if(y-H2-8<M)np();const top=y-6;A.forEach(a=>cur.push(`q ${a.pw.toFixed(1)} 0 0 ${a.ph.toFixed(1)} ${(a.r?W-M-a.pw:M).toFixed(1)} ${(top-a.ph).toFixed(1)} cm /Im${a.k} Do Q`));y=top-H2-8}catch(e){}return}
     const sz=it.sz||10,lh=sz+5,xs=it.x||[M];if(y-lh<M)np();y-=lh;
     (it.c||[]).forEach((t,i)=>{const nx=xs[i+1]||W-M,mx=Math.max(3,Math.floor((nx-xs[i]-4)/(sz*.52)));let q=raw(t);if(q.length>mx)q=q.slice(0,mx-1)+".";cur.push(`BT /F${it.b?2:1} ${sz} Tf ${xs[i]} ${y} Td (${E(q)}) Tj ET`)});
     if(it.line)cur.push(`0.5 w ${M} ${y-3} m ${W-M} ${y-3} l S`)});
@@ -310,19 +316,19 @@ function mkPDF(items,embed){const W=595,H=842,M=40,pages=[],imgs=[];let cur=[],y
   const xr=out.length;out+=`xref\n0 ${offs.length+1}\n0000000000 65535 f \n`+offs.map(x=>String(x).padStart(10,"0")+" 00000 n \n").join("")+`trailer<</Size ${offs.length+1}/Root 1 0 R>>\nstartxref\n${xr}\n%%EOF`;
   const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;return u}
 async function shareFile(f,ok){try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});ok&&ok();return}}catch(e){if(e&&e.name==="AbortError")return}
-  try{const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);ok&&ok()}catch(e){alert("No se pudo guardar el archivo en este dispositivo.")}}
+  try{const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);ok&&ok()}catch(e){alert("No se pudo guardar el archivo en este dispositivo.")}}
 function sharePDF(name,items,embed,ok){const f=new File([mkPDF(items,embed)],name,{type:"application/pdf"}),u=URL.createObjectURL(f);
-  const row=it=>it.img?`<img src="${it.img}" style="max-width:150px;max-height:150px;display:block;margin:6px 0;border-radius:6px">`:`<div style="display:grid;grid-template-columns:${(it.c||[""]).length>2?`repeat(${it.c.length},1fr)`:(it.c||[]).length===2?"1fr auto":"1fr"};gap:6px;font-size:${Math.max(11,(it.sz||10)+2)}px;${it.b?"font-weight:700;":""}${it.line?"border-bottom:1px solid #999;padding-bottom:2px;":""}padding:2px 0;word-break:break-word">${(it.c||[""]).map(t=>`<span>${esc(t)}</span>`).join("")}</div>`;
-  sheet(`<h1>📄 Vista previa</h1><p class="mu">${esc(name)}</p><button id="pv1">Compartir / Guardar</button><br><br><button class="s" id="pv2">Abrir el PDF</button><br><br><div style="background:#fff;color:#111;border-radius:10px;padding:12px">${items.map(row).join("")}</div><br><button class="s" id="cx">Cerrar</button>`);
-  $("pv1").onclick=()=>shareFile(f,ok);
-  $("pv2").onclick=()=>{const a=document.createElement("a");a.href=u;a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove()};
+  const row=it=>(it.img||it.img2)?`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin:6px 0">${it.img?`<img src="${it.img}" style="max-width:150px;max-height:170px;border-radius:6px">`:"<span></span>"}${it.img2?`<img src="${it.img2}" style="max-width:110px;max-height:110px;object-fit:contain">`:""}</div>`:`<div style="display:grid;grid-template-columns:${(it.c||[""]).length>2?`repeat(${it.c.length},1fr)`:(it.c||[]).length===2?"1fr auto":"1fr"};gap:6px;font-size:${Math.max(11,(it.sz||10)+2)}px;${it.b?"font-weight:700;":""}${it.line?"border-bottom:1px solid #999;padding-bottom:2px;":""}padding:2px 0;word-break:break-word">${(it.c||[""]).map(t=>`<span>${esc(t)}</span>`).join("")}</div>`;
+  sheet(`<h1>📄 Vista previa</h1><p class="mu">${esc(name)}</p><button class="pv1">Compartir / Guardar</button><br><br><div style="background:#fff;color:#111;border-radius:10px;padding:12px">${items.map(row).join("")}</div><div style="position:sticky;bottom:calc(-22px - env(safe-area-inset-bottom,0px));background:var(--bg);padding:10px 0 calc(22px + env(safe-area-inset-bottom,0px));margin:10px 0 calc(-22px - env(safe-area-inset-bottom,0px));display:flex;gap:8px;border-top:1px solid var(--bd)"><button class="pv1" style="flex:1.3;padding:12px 6px;font-size:14px">Compartir / Guardar</button><button class="s pv2" style="flex:1;padding:12px 6px;font-size:14px">Abrir PDF</button><button class="s" id="cx" style="flex:.8;padding:12px 6px;font-size:14px">Cerrar</button></div>`);
+  document.querySelectorAll(".pv1").forEach(b=>b.onclick=()=>shareFile(f,ok));
+  document.querySelectorAll(".pv2").forEach(b=>b.onclick=()=>{const a=document.createElement("a");a.href=u;a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove()});
   $("cx").onclick=close}
-const pdfHead=t=>{const p=P(),r=[];if(p.logo)r.push({img:p.logo,w:55});if(p.name)r.push({c:[p.name],b:1,sz:15});const i=pinfo(p,1);if(i)r.push({c:[i],sz:9});r.push({c:[t],b:1,sz:13},{c:["Fecha: "+fmt(today())],sz:9,line:1});return r};
+const pdfHead=(t,nl)=>{const p=P(),r=[];if(p.logo&&!nl)r.push({img:p.logo,w:55});if(p.name)r.push({c:[p.name],b:1,sz:15});const i=pinfo(p,1);if(i)r.push({c:[i],sz:9});r.push({c:[t],b:1,sz:13},{c:["Fecha: "+fmt(today())],sz:9,line:1});return r};
 const pdfSec=t=>[{c:[""],sz:4},{c:[t.toUpperCase()],b:1,sz:10,line:1}];
 function pdfList(){const A=[...act()].sort((a,b)=>a.tag.localeCompare(b.tag,"es",{numeric:true})),x=[40,100,180,252,285,340,420,487];
   sharePDF("listado-animales-"+today()+".pdf",[...pdfHead("Listado de animales"),{c:["Arete","Nombre","Categoría","Sexo","Edad","Dueño","Madre","Padre"],x,b:1,sz:8,line:1},...A.map(a=>({c:[a.tag,a.name,a.cat,sexo(a),edadC(a.born),a.owner,a.mom,a.dad],x,sz:8})),{c:["Total de animales: "+A.length],b:1,sz:10}])}
 function pdfCV(a){const rp=S.repro.filter(e=>e.aid===a.id).sort((p,q)=>p.date.localeCompare(q.date)),ev=S.events.filter(e=>e.aid===a.id||e.aid==="ALL").sort((p,q)=>p.date.localeCompare(q.date)),x=[40,110,250];
-  sharePDF("hoja-de-vida-"+a.tag+".pdf",[...pdfHead("Hoja de vida: "+raw(a)+(a.owner?"  (Dueño: "+a.owner+")":"")),...(a.photo?[{img:a.photo,w:150}]:[]),...hvRows(a).map(r=>({c:[r[0],String(r[1])],x:[40,200],sz:10})),...pdfSec("Eventos reproductivos"),...(rp.length?rp.map(e=>({c:[fmt(e.date),e.type+(e.result?" "+e.result:""),(e.detail||"")+(e.due?" - parto prob. "+fmt(e.due):"")],x,sz:9})):[{c:["Sin registros"],sz:9}]),...pdfSec("Sanidad"),...(ev.length?ev.map(e=>({c:[fmt(e.date),e.type,(e.product||"")+(e.next?" - próx. "+fmt(e.next):"")],x,sz:9})):[{c:["Sin registros"],sz:9}])])}
+  sharePDF("hoja-de-vida-"+a.tag+".pdf",[...pdfHead("Hoja de vida: "+raw(a)+(a.owner?"  (Dueño: "+a.owner+")":""),1),...((a.photo||P().logo)?[{img:a.photo,w:150,img2:P().logo,w2:110}]:[]),...hvRows(a).map(r=>({c:[r[0],String(r[1])],x:[40,200],sz:10})),...pdfSec("Eventos reproductivos"),...(rp.length?rp.map(e=>({c:[fmt(e.date),e.type+(e.result?" "+e.result:""),(e.detail||"")+(e.due?" - parto prob. "+fmt(e.due):"")],x,sz:9})):[{c:["Sin registros"],sz:9}]),...pdfSec("Sanidad"),...(ev.length?ev.map(e=>({c:[fmt(e.date),e.type,(e.product||"")+(e.next?" - próx. "+fmt(e.next):"")],x,sz:9})):[{c:["Sin registros"],sz:9}])])}
 function pdfER(per,lab){sharePDF("estado-de-resultados-"+today()+".pdf",[...pdfHead("Estado de resultados - "+lab),...erRows(per).map(([a,b,t,i])=>({c:[(i?"    ":"")+a,b],x:[40,430],b:t,sz:11,line:t&&a.startsWith("Total")}))])}
 const secItems=z=>z.flatMap(x=>[...pdfSec(x.h),...x.r.map(r=>({c:[String(r[0]),String(r[1])],x:[40,340],sz:9}))]);
 function pdfReport(per){sharePDF("reporte-tambo-"+today()+".pdf",[...pdfHead("Reporte - "+PER[per]),...secItems(repData(per,1))])}
@@ -417,6 +423,11 @@ function fTool(t){t=t||{};let ph=t.photo||"";
 function shrink(file,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,360/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.6))};im.onerror=()=>alert("No pude leer la foto");im.src=r.result};r.readAsDataURL(file)}
 const potSel=(id,cur)=>{const L=[...new Set(["Potreron","San Bronw",...(S.meta.potList||[]),...potreros(),...(cur?[cur]:[])])];return `<select id="${id}"><option value="">— Sin potrero —</option>${L.map(p=>`<option ${p===cur?"selected":""}>${esc(p)}</option>`).join("")}<option value="__new">➕ Agregar otro…</option></select>`};
 const potNew=(id,cur)=>{$(id).onchange=e=>{if(e.target.value!=="__new")return;const n=(prompt("Nombre del nuevo potrero")||"").trim();if(!n){e.target.value=cur||"";return}S.meta.potList=S.meta.potList||[];if(!S.meta.potList.includes(n))S.meta.potList.push(n);save();const o=document.createElement("option");o.textContent=n;e.target.insertBefore(o,e.target.lastChild);e.target.value=n}};
+const pp=a=>{const s=rs(a.id);return s.st==="preñada"?(s.due?" · Preñada, parto "+fmt(s.due):" · Preñada, sin fecha de parto"):""};
+function fPren(aid){const a=byId(aid),E=S.repro.filter(e=>e.aid===aid&&e.type==="Diagnóstico"&&e.result==="Preñada").sort((x,y)=>y.date.localeCompare(x.date))[0];if(!E)return alert("Esta vaca no tiene un diagnóstico de preñez registrado.");
+  sheet(`<h1>📅 Fecha de preñez</h1><p class="mu">${nm(a)}</p><label>Fecha en que se preñó (servicio o monta)</label><input type="date" id="pg_d" value="${E.preg||""}"><div class="b" id="pg_r" style="margin:-4px 0 12px"></div><label>Fecha probable de parto (9 meses después)</label><input type="date" id="pg_p" value="${E.due||""}"><button id="ok">Guardar</button><br><br><button class="s" id="cx">Cancelar</button>`);
+  const up=()=>{const d=$("pg_d").value;if(d){$("pg_p").value=addM(d,9);$("pg_r").textContent="Parto probable: "+fmt(addM(d,9))}};$("pg_d").onchange=up;$("pg_d").oninput=up;
+  $("ok").onclick=()=>{const p=$("pg_p").value;if(!p)return alert("Indicá la fecha de preñez o la fecha probable de parto");E.preg=$("pg_d").value;E.due=p;save();close();render();alert("Fecha probable de parto: "+fmt(p))};$("cx").onclick=close}
 function fAnimal(a){a=a||{};
   sheet(`<h1>${a.id?"Editar":"Nuevo"} animal</h1>
   <label>N.º de arete / caravana *</label><input id="f_tag" value="${esc(a.tag)}">
@@ -476,8 +487,8 @@ function detail(a){
   const ev=S.events.filter(e=>e.aid===a.id||e.aid==="ALL").sort((x,y)=>y.date.localeCompare(x.date)),rp=S.repro.filter(e=>e.aid===a.id).sort((x,y)=>y.date.localeCompare(x.date)),st=rs(a.id);
   sheet(`${a.photo?`<img src="${a.photo}" style="width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin-bottom:10px">`:""}<h1>${nm(a)}</h1><p class="mu">${a.cat}${a.born?" · Nació "+fmt(a.born):""}${a.breed?" · "+esc(a.breed):""}${a.owner?" · Dueño: "+esc(a.owner):""}</p>
   ${hv(a)}<h2>Reproducción · ${st.st}${st.due?" · parto "+fmt(st.due):""}</h2>${rp.map(e=>`<div class="card"><div class="row"><span class="b">${e.type}${e.result?" · "+e.result:""}</span><span class="mu">${fmt(e.date)}</span></div><div class="mu">${esc(e.detail)}${e.note?" · "+esc(e.note):""}</div></div>`).join("")||'<p class="mu">Sin eventos.</p>'}<h2>Historial sanitario</h2>${ev.map(e=>`<div class="card"><div class="row"><span class="b">${e.type}</span><span class="mu">${fmt(e.date)}</span></div><div class="mu">${esc(e.product)}${e.note?" · "+esc(e.note):""}</div></div>`).join("")||'<p class="mu">Sin registros.</p>'}
-  <button id="pdfv">📄 Hoja de vida (PDF)</button><br><br><button id="ed">Editar</button><br><br><button class="d" id="del">Eliminar animal</button><br><br><button class="s" id="cx">Cerrar</button>`);
-  $("ed").onclick=()=>fAnimal(a);$("pdfv").onclick=()=>pdfCV(a);
+  ${st.st==="preñada"?'<button class="s" id="pg">📅 Fecha de preñez / parto probable</button><br><br>':""}<button id="pdfv">📄 Hoja de vida (PDF)</button><br><br><button id="ed">Editar</button><br><br><button class="d" id="del">Eliminar animal</button><br><br><button class="s" id="cx">Cerrar</button>`);
+  $("ed").onclick=()=>fAnimal(a);$("pdfv").onclick=()=>pdfCV(a);if(st.st==="preñada")$("pg").onclick=()=>fPren(a.id);
   $("del").onclick=()=>{if(confirm("¿Eliminar este animal y su historial?")){S.animals=S.animals.filter(x=>x!==a);S.events=S.events.filter(e=>e.aid!==a.id);S.repro=S.repro.filter(e=>e.aid!==a.id);save();close();render()}};
   $("cx").onclick=close}
 document.addEventListener("click",e=>{
