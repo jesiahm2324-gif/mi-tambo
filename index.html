@@ -154,22 +154,32 @@ function vRepro(){
   const dg=F.filter(x=>x.s.st==="servida"&&dd(t,x.s.svc)>=30);
   const sec=pr.filter(x=>x.a.cat==="Vaca en ordeñe"&&dd(x.s.due,t)<=60);
   const l=[...S.repro].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,25);
-  const c=(x,m,w)=>`<div class="card ${w?"warn":""}" data-a="${x.a.id}"><div class="row"><span class="b">${nm(x.a)}</span><span>${m}</span></div></div>`;
+  const c=(x,m,w,at)=>`<div class="card ${w?"warn":""}" ${at||`data-a="${x.a.id}"`}><div class="row"><span class="b">${nm(x.a)}</span><span>${m}</span></div></div>`;
   return `<h1>Preñez y partos</h1><div class="g">
   <div class="card"><div class="mu">Preñadas</div><div class="big">${n("preñada")}</div></div>
   <div class="card"><div class="mu">Servidas (sin diagnóstico)</div><div class="big">${n("servida")}</div></div>
   <div class="card"><div class="mu">Vacías</div><div class="big">${n("vacía")}</div></div>
   <div class="card"><div class="mu">Paridas</div><div class="big">${n("parida")}</div></div></div>
-  ${dg.length?`<h2>Para diagnosticar</h2>${dg.map(x=>c(x,"servida hace "+dd(t,x.s.svc)+" d",1)).join("")}`:""}
+  ${dg.length?`<h2>Para diagnosticar</h2>${dg.map(x=>c(x,"servida hace "+dd(t,x.s.svc)+" d · confirmar ›",1,`data-cf="${x.a.id}"`)).join("")}`:""}
   ${sec.length?`<h2>Para secar (≤60 días al parto)</h2>${sec.map(x=>c(x,"parto "+fmt(x.s.due),1)).join("")}`:""}
   <h2>Próximos partos</h2>${pr.map(x=>{const r=dd(x.s.due,t);return c(x,r<=0?"¡Parto esperado!":fmt(x.s.due)+" · en "+r+" d",r<=15)}).join("")||'<p class="mu">Sin vacas preñadas con fecha.</p>'}
   ${F.filter(x=>x.s.st==="preñada"&&!x.s.due).map(x=>c(x,"sin fecha · tocá para cargarla",1)).join("")}
   <h2>Últimos eventos</h2>${l.map(e=>`<div class="card" data-r="${e.id}"><div class="row"><span class="b">${nm(byId(e.aid))}</span><span class="mu">${fmt(e.date)}</span></div><div>${e.type}${e.result?" · "+e.result:""}</div><div class="mu">${esc(e.detail)}${e.note?" · "+esc(e.note):""}</div>${e.due?`<div class="b" style="color:var(--pr)">Parto probable: ${fmt(e.due)}</div>`:""}</div>`).join("")||'<p class="mu">Sin eventos reproductivos.</p>'}`;
 }
+function refreshDue(aid){S.repro.filter(e=>e.aid===aid&&e.type==="Diagnóstico"&&e.result==="Preñada"&&!e.man).forEach(e=>{const sv=S.repro.filter(z=>z.aid===aid&&z.type==="Servicio"&&z.date<=e.date).sort((p,q)=>q.date.localeCompare(p.date))[0];if(sv){e.preg=sv.date;e.due=addM(sv.date,9)}})}
+function fConf(aid){const a=byId(aid),sv=S.repro.filter(e=>e.aid===aid&&e.type==="Servicio").sort((x,y)=>y.date.localeCompare(x.date))[0];if(!sv)return alert("Esta vaca no tiene un servicio registrado.");
+  sheet(`<h1>✅ Confirmar preñez</h1><p class="mu">${nm(a)}</p><label>Fecha de la monta / servicio (podés corregirla)</label><input type="date" id="cf_s" value="${sv.date}"><label>Toro</label>${parSel("cf_b",sv.bull||"",1)}<label>Resultado</label><select id="cf_r"><option>Preñada</option><option>Vacía</option></select><label>Fecha de la confirmación</label><input type="date" id="cf_d" value="${today()}"><label>Método</label><select id="cf_m">${opts(["Tacto","Ecografía","Observación (apuntes)"])}</select><div class="b" id="cf_p" style="margin:0 0 12px"></div><button id="ok">Guardar</button><br><br><button class="s" id="cx">Cancelar</button>`);
+  parNew("cf_b",sv.bull||"",1);const up=()=>{$("cf_p").textContent=$("cf_r").value==="Preñada"&&$("cf_s").value?"Parto probable: "+fmt(addM($("cf_s").value,9)):""};$("cf_s").oninput=up;$("cf_s").onchange=up;$("cf_r").onchange=up;up();
+  $("ok").onclick=()=>{const sd=$("cf_s").value;if(!sd)return alert("Indicá la fecha de la monta");const dc=$("cf_d").value&&$("cf_d").value>sd?$("cf_d").value:(today()>sd?today():sd),b=$("cf_b").value,res=$("cf_r").value,tp=sv.stype||((sv.detail||"").split(" · ")[0]==="Monta natural"?"Monta natural":"Inseminación");
+    sv.date=sd;sv.bull=b;sv.stype=tp;sv.detail=tp+(b?" · "+pname(b):"");
+    S.repro.push({id:uid(),type:"Diagnóstico",aid,date:dc,note:"",detail:$("cf_m").value,result:res,bull:b,preg:res==="Preñada"?sd:"",due:res==="Preñada"?addM(sd,9):"",man:false});
+    save();close();render();if(res==="Preñada")alert("Fecha probable de parto: "+fmt(addM(sd,9)))};
+  $("cx").onclick=close}
 const bullF=(tipo,cur)=>tipo==="Monta natural"?parSel("x2",cur,1):`<input id="x2" placeholder="Nombre del toro o pajuela" value="${esc(cur)}">`;
 function fRepro(E){E=E||{};const F=fem();if(!F.length)return alert("Primero cargá una vaca o vaquillona");
   const ed=!!E.id,stp=E.stype||((E.detail||"").split(" · ")[0]==="Monta natural"?"Monta natural":"Inseminación"),dp=(E.detail||"").split(" · ")[0];
   const X={Servicio:`<label>Tipo de servicio</label><select id="x1">${opts(["Inseminación","Monta natural"],stp)}</select><label>Toro (monta natural) o nombre del toro / pajuela (inseminación)</label><div id="x2w"></div>`,
+  "Preñez confirmada":`<p class="mu">Registra de una vez la monta o inseminación y la preñez confirmada. La fecha de arriba es la de la monta (podés corregirla después).</p><label>Tipo de servicio</label><select id="x1">${opts(["Inseminación","Monta natural"],stp)}</select><label>Toro (monta natural) o nombre del toro / pajuela (inseminación)</label><div id="x2w"></div><label>Fecha de confirmación de la preñez (hoy si la dejás vacía)</label><input type="date" id="x3"><label>Método</label><select id="x5">${opts(["Tacto","Ecografía","Observación (apuntes)"])}</select>`,
   "Diagnóstico":`<label>Resultado</label><select id="x1">${opts(["Preñada","Vacía"],E.result)}</select><label>Método</label><select id="x2">${opts(["Tacto","Ecografía"],E.detail)}</select><label>Fecha en que se preñó (servicio o monta). Si ya registraste el servicio, se toma de ahí.</label><input type="date" id="x3" value="${E.preg||""}"><label>Toro (padre de la cría)</label>${parSel("x4",E.bull||"",1)}`,
   Parto:ed?`<label>Tipo de parto</label><select id="x3">${opts(["Normal","Asistido","Difícil"],dp)}</select>`:`<label>Cría</label><select id="x1">${opts(["Hembra","Macho","Mortinato"])}</select><label>Caravana de la cría</label><input id="x2"><label>Tipo de parto</label><select id="x3">${opts(["Normal","Asistido","Difícil"])}</select>`,Aborto:""};
   sheet(`<h1>${ed?"Editar evento":"Evento reproductivo"}</h1>
@@ -178,19 +188,22 @@ function fRepro(E){E=E||{};const F=fem();if(!F.length)return alert("Primero carg
   <label>Fecha</label><input type="date" id="f_d" value="${E.date||today()}">
   <div id="xx"></div><label>Notas</label><input id="f_n" value="${esc(E.note)}">
   <button id="ok">Guardar</button><br><br>${ed?'<button class="d" id="del">Eliminar</button><br><br>':""}<button class="s" id="cx">Cancelar</button>`);
-  const tg=()=>{const t=$("f_t").value;$("xx").innerHTML=X[t];if(t==="Servicio"){const f=()=>{$("x2w").innerHTML=bullF($("x1").value,E.bull||"");if($("x1").value==="Monta natural")parNew("x2",E.bull||"",1)};$("x1").onchange=f;f()}if(t==="Diagnóstico")parNew("x4",E.bull||"",1)};$("f_t").onchange=tg;tg();
+  const tg=()=>{const t=$("f_t").value;$("xx").innerHTML=X[t];if(t==="Servicio"||t==="Preñez confirmada"){const f=()=>{$("x2w").innerHTML=bullF($("x1").value,E.bull||"");if($("x1").value==="Monta natural")parNew("x2",E.bull||"",1)};$("x1").onchange=f;f()}if(t==="Diagnóstico")parNew("x4",E.bull||"",1)};$("f_t").onchange=tg;tg();
   $("ok").onclick=()=>{const type=$("f_t").value,a=byId($("f_a").value),d=$("f_d").value||today();
     const x1=$("x1")?$("x1").value:"",x2=$("x2")?$("x2").value.trim():"",x3=$("x3")?$("x3").value:"";
-    const r=ed?E:{id:uid(),type,detail:"",result:""};Object.assign(r,{aid:a.id,date:d,note:$("f_n").value.trim()});
-    if(type==="Servicio"){r.stype=x1;r.detail=x1+(x2?" · "+pname(x2):"");r.bull=x2}
-    if(type==="Diagnóstico"){r.result=x1;r.detail=x2;r.bull=$("x4")?$("x4").value:"";if(x1==="Preñada"){const sv=S.repro.filter(z=>z.aid===a.id&&z.type==="Servicio"&&z.date<=d).sort((p,q)=>q.date.localeCompare(p.date))[0];const pd=$("x3").value||(sv?sv.date:"");r.preg=pd;r.due=pd?addM(pd,9):(ed&&r.due)||""}else{r.due="";r.preg=""}}
+    if(type==="Preñez confirmada"){const dc=$("x3").value&&$("x3").value>d?$("x3").value:(today()>d?today():d),tp=x1,bl=x2,svId=uid();
+      S.repro.push({id:svId,type:"Servicio",aid:a.id,date:d,note:$("f_n").value.trim(),detail:tp+(bl?" · "+pname(bl):""),result:"",stype:tp,bull:bl},{id:uid(),type:"Diagnóstico",aid:a.id,date:dc,note:"",detail:$("x5").value,result:"Preñada",bull:bl,preg:d,due:addM(d,9),man:false});
+      save();close();render();alert("Preñez registrada. Fecha probable de parto: "+fmt(addM(d,9)));return}
+    const oldD=ed?E.date:null;const r=ed?E:{id:uid(),type,detail:"",result:""};Object.assign(r,{aid:a.id,date:d,note:$("f_n").value.trim()});
+    if(type==="Servicio"){r.stype=x1;r.detail=x1+(x2?" · "+pname(x2):"");r.bull=x2;if(ed&&oldD&&d>oldD)S.repro.filter(z=>z.aid===a.id&&z.type==="Diagnóstico"&&!z.man&&z.date>=oldD&&z.date<d).forEach(z=>z.date=d)}
+    if(type==="Diagnóstico"){r.result=x1;r.detail=x2;r.bull=$("x4")?$("x4").value:"";if(x1==="Preñada"){const sv=S.repro.filter(z=>z.aid===a.id&&z.type==="Servicio"&&z.date<=d).sort((p,q)=>q.date.localeCompare(p.date))[0];const pd=$("x3").value||(sv?sv.date:"");r.man=!!$("x3").value&&!(sv&&$("x3").value===sv.date);r.preg=pd;r.due=pd?addM(pd,9):(ed&&r.due)||""}else{r.due="";r.preg=""}}
     if(type==="Parto"){if(ed){const p=(E.detail||"").split(" · ");p[0]=x3;r.detail=p.join(" · ")}else{r.detail=x3+" · "+x1+(x2?" #"+x2:"");
       if(x1!=="Mortinato"&&x2){if(!isSN(x2)&&act().some(z=>z.tag===x2))return alert("Esa caravana ya existe");
         S.animals.push({id:uid(),tag:x2,name:"",cat:x1==="Hembra"?"Ternera":"Ternero",born:d,breed:"",mom:refOf(a),dad:rs(a.id).bull||"",owner:a.owner||"",pot:a.pot||"",status:"activo"});
         S.moves.push({id:uid(),type:"Nacimiento",tag:x2,date:d,note:"Madre #"+a.tag})}
       a.cat="Vaca en ordeñe"}}
-    if(!ed)S.repro.push(r);save();close();render();if(r.due)alert("Fecha probable de parto: "+fmt(r.due));else if(type==="Diagnóstico"&&x1==="Preñada")alert("Quedó registrada la preñez, pero sin fecha de parto porque no hay un servicio previo. Entrá a la ficha de la vaca y tocá \"Fecha de preñez\" para cargarla.")};
-  if(ed)$("del").onclick=()=>{if(confirm("¿Eliminar este evento?")){S.repro=S.repro.filter(x=>x!==E);save();close();render()}};
+    if(!ed)S.repro.push(r);refreshDue(a.id);save();close();render();if(r.due)alert("Fecha probable de parto: "+fmt(r.due));else if(type==="Diagnóstico"&&x1==="Preñada")alert("Quedó registrada la preñez, pero sin fecha de parto porque no hay un servicio previo. Entrá a la ficha de la vaca y tocá \"Fecha de preñez\" para cargarla.")};
+  if(ed)$("del").onclick=()=>{if(confirm("¿Eliminar este evento?")){S.repro=S.repro.filter(x=>x!==E);refreshDue(E.aid);save();close();render()}};
   $("cx").onclick=close}
 const ING=["Venta de leche y lácteos","Venta de animales","Otros ingresos"],GAS=["Alimento","Sanidad y veterinario","Salario","Aguinaldo","Diezmos","Mano de obra","Combustible y energía","Mantenimiento","Compra de animales","Otros gastos"];
 let fm=today().slice(0,7);
@@ -486,7 +499,7 @@ const pp=a=>{const s=rs(a.id);return s.st==="preñada"?(s.due?" · Preñada, par
 function fPren(aid){const a=byId(aid),E=S.repro.filter(e=>e.aid===aid&&e.type==="Diagnóstico"&&e.result==="Preñada").sort((x,y)=>y.date.localeCompare(x.date))[0];if(!E)return alert("Esta vaca no tiene un diagnóstico de preñez registrado.");
   sheet(`<h1>📅 Fecha de preñez</h1><p class="mu">${nm(a)}</p><label>Fecha en que se preñó (servicio o monta)</label><input type="date" id="pg_d" value="${E.preg||""}"><div class="b" id="pg_r" style="margin:-4px 0 12px"></div><label>Fecha probable de parto (9 meses después)</label><input type="date" id="pg_p" value="${E.due||""}"><button id="ok">Guardar</button><br><br><button class="s" id="cx">Cancelar</button>`);
   const up=()=>{const d=$("pg_d").value;if(d){$("pg_p").value=addM(d,9);$("pg_r").textContent="Parto probable: "+fmt(addM(d,9))}};$("pg_d").onchange=up;$("pg_d").oninput=up;
-  $("ok").onclick=()=>{const p=$("pg_p").value;if(!p)return alert("Indicá la fecha de preñez o la fecha probable de parto");E.preg=$("pg_d").value;E.due=p;save();close();render();alert("Fecha probable de parto: "+fmt(p))};$("cx").onclick=close}
+  $("ok").onclick=()=>{const p=$("pg_p").value;if(!p)return alert("Indicá la fecha de preñez o la fecha probable de parto");E.preg=$("pg_d").value;E.due=p;E.man=true;save();close();render();alert("Fecha probable de parto: "+fmt(p))};$("cx").onclick=close}
 function fAnimal(a){a=a||{};
   sheet(`<h1>${a.id?"Editar":"Nuevo"} animal</h1>
   <label>N.º de arete / caravana * (escribí SN si no tiene)</label><input id="f_tag" value="${esc(a.tag)}">
@@ -567,8 +580,8 @@ function detail(a){
   const ev=S.events.filter(e=>e.aid===a.id||e.aid==="ALL").sort((x,y)=>y.date.localeCompare(x.date)),rp=S.repro.filter(e=>e.aid===a.id).sort((x,y)=>y.date.localeCompare(x.date)),st=rs(a.id);
   sheet(`${a.photo?`<img src="${a.photo}" style="width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin-bottom:10px">`:""}<h1>${nm(a)}</h1><p class="mu">${a.cat}${a.born?" · Nació "+fmt(a.born):""}${a.breed?" · "+esc(a.breed):""}${a.owner?" · Dueño: "+esc(a.owner):""}</p>
   ${hv(a)}<h2>Reproducción · ${st.st}${st.due?" · parto "+fmt(st.due):""}</h2>${rp.map(e=>`<div class="card"><div class="row"><span class="b">${e.type}${e.result?" · "+e.result:""}</span><span class="mu">${fmt(e.date)}</span></div><div class="mu">${esc(e.detail)}${e.note?" · "+esc(e.note):""}</div></div>`).join("")||'<p class="mu">Sin eventos.</p>'}<h2>Historial sanitario</h2>${ev.map(e=>`<div class="card"><div class="row"><span class="b">${e.type}</span><span class="mu">${fmt(e.date)}</span></div><div class="mu">${esc(e.product)}${e.note?" · "+esc(e.note):""}</div></div>`).join("")||'<p class="mu">Sin registros.</p>'}
-  ${st.st==="preñada"?'<button class="s" id="pg">📅 Fecha de preñez / parto probable</button><br><br>':""}<button id="pdfv">📄 Hoja de vida (PDF)</button><br><br><button id="ed">Editar</button><br><br><button class="d" id="del">Eliminar animal</button><br><br><button class="s" id="cx">Cerrar</button>`);
-  $("ed").onclick=()=>fAnimal(a);$("pdfv").onclick=()=>pdfCV(a);if(st.st==="preñada")$("pg").onclick=()=>fPren(a.id);
+  ${st.st==="preñada"?'<button class="s" id="pg">📅 Fecha de preñez / parto probable</button><br><br>':""}${st.st==="servida"?'<button class="s" id="cfm">✅ Confirmar preñez</button><br><br>':""}<button id="pdfv">📄 Hoja de vida (PDF)</button><br><br><button id="ed">Editar</button><br><br><button class="d" id="del">Eliminar animal</button><br><br><button class="s" id="cx">Cerrar</button>`);
+  $("ed").onclick=()=>fAnimal(a);$("pdfv").onclick=()=>pdfCV(a);if(st.st==="preñada")$("pg").onclick=()=>fPren(a.id);if(st.st==="servida")$("cfm").onclick=()=>fConf(a.id);
   $("del").onclick=()=>{if(confirm("¿Eliminar este animal y su historial?")){S.animals=S.animals.filter(x=>x!==a);S.events=S.events.filter(e=>e.aid!==a.id);S.repro=S.repro.filter(e=>e.aid!==a.id);save();close();render()}};
   $("cx").onclick=close}
 document.addEventListener("click",e=>{
@@ -584,6 +597,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("[data-er]")){fER("mes");return}
   if(e.target.closest("[data-prof2]")){fProf();return}
   const pe=e.target.closest("[data-pe]");if(pe){const p=S.meta.people.find(x=>x.id===pe.dataset.pe);fPerson(p.kind,p);return}
+  const cfb=e.target.closest("[data-cf]");if(cfb){fConf(cfb.dataset.cf);return}
   const tl=e.target.closest("[data-tl]");if(tl){fTool(S.tools.find(x=>x.id===tl.dataset.tl));return}
   const tls=e.target.closest("[data-tools]");if(tls){fTools();return}
   const pf=e.target.closest("[data-prof]");if(pf){fProf();return}
