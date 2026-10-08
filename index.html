@@ -89,7 +89,7 @@ const opts=(a,sel)=>a.map(x=>`<option ${x===sel?"selected":""}>${x}</option>`).j
 
 function alerts(){
   const t=today(),L=[];
-  fem().forEach(a=>{const s=rs(a.id);if(s.st==="preñada"&&s.due){const r=dd(s.due,t);if(r<=AD())L.push({k:"parto",r,i:"🐄",t:"Parto: "+raw(a),d:s.due,aid:a.id})}else if((s.st==="parida"||s.st==="vacía")&&s.lp){const dp=dd(t,s.lp),lim=+cfg().vac||90;if(dp>=lim)L.push({k:"vacia",r:lim-dp,i:"⚠️",t:"Vacía: "+raw(a),d:s.lp,aid:a.id,m:dp+" d desde el parto sin preñez"})}});
+  fem().forEach(a=>{const s=rs(a.id);if(s.st==="preñada"&&s.due){const r=dd(s.due,t);if(r<=AD())L.push({k:"parto",r,i:"🐄",t:"Parto: "+raw(a),d:s.due,aid:a.id})}else if((s.st==="parida"||s.st==="vacía")&&s.lp){const dp=dd(t,s.lp),lim=+cfg().vac||90;if(dp>=lim)L.push({k:"vacia",r:lim-dp,i:"⚠️",t:"Vacía: "+raw(a),d:s.lp,aid:a.id,m:dp+" d sin preñez"})}});
   const PL=vacPlan();PL.forEach(p=>{const l=lastApp(p.name);if(!l)return;const due=addM(l.date,p.months),r=dd(due,t);if(r<=AD())L.push({k:"vac",r,i:"💉",t:"Vacuna "+p.name+": "+(l.aid==="ALL"?"todo el rebaño":raw(byId(l.aid))),d:due,aid:l.aid==="ALL"?null:l.aid})});
   S.events.forEach(e=>{if(!e.next)return;const pr=(e.product||"").toLowerCase();if(PL.some(p=>p.name.trim().toLowerCase()===pr.trim()))return;
     if(S.events.some(x=>x!==e&&x.aid===e.aid&&x.type===e.type&&(x.product||"").toLowerCase()===pr&&x.date>e.date))return;
@@ -98,7 +98,11 @@ function alerts(){
 function alHtml(L,nohead){
   if(!L.length)return "";
   const w=r=>r<0?"vencida hace "+(-r)+" d":r===0?"¡hoy!":"en "+r+" d";
-  return (nohead?"":`<h2>🔔 Alertas (${L.length})</h2>`)+L.map(x=>`<div class="card ${x.r<=7?"warn":""}" ${x.aid&&x.aid!=="ALL"?`data-a="${x.aid}"`:""}><div class="row"><span class="b">${x.i} ${esc(x.t)}</span><span>${x.m||w(x.r)}</span></div><div class="mu">${x.k==="vacia"?"Último parto: ":""}${fmt(x.d)}</div></div>`).join("")}
+  return (nohead?"":`<h2>🔔 Alertas (${L.length})</h2>`)+L.map(x=>`<div class="card ${x.r<=7?"warn":""}" ${x.aid&&x.aid!=="ALL"?`data-a="${x.aid}"`:""}><div class="b">${x.i} ${esc(x.t)}</div><div class="row" style="margin-top:3px"><span style="opacity:.8">${x.k==="vacia"?"Último parto: ":""}${fmt(x.d)}</span><span>${x.m||w(x.r)}</span></div></div>`).join("")}
+const alCard=L=>{if(!L.length)return"";const n=k=>L.filter(x=>x.k===k).length,u=L.filter(x=>x.r<=7&&x.k!=="vacia").length;
+  return `<div class="card ${u?"warn":""}" data-al><div class="row"><span class="b">🔔 Alertas (${L.length})</span><span>›</span></div><div class="mu" style="${u?"color:inherit;opacity:.9":""}">${[n("parto")?n("parto")+(n("parto")>1?" partos":" parto"):"",n("vac")?n("vac")+(n("vac")>1?" vacunas":" vacuna"):"",n("vacia")?n("vacia")+(n("vacia")>1?" vacías":" vacía"):""].filter(Boolean).join(" · ")}${u?" · "+u+(u>1?" urgentes":" urgente"):""}</div></div>`};
+function fAlertas(){const L=alerts(),G=[["parto","🐄 Partos próximos"],["vac","💉 Vacunas y medicamentos"],["vacia","⚠️ Vacías sin preñez"]];
+  sheet(`<h1>🔔 Alertas (${L.length})</h1>${G.map(([k,t])=>{const l=L.filter(x=>x.k===k);return l.length?`<h2>${t} (${l.length})</h2>${alHtml(l,1)}`:""}).join("")||'<p class="mu">No hay alertas.</p>'}<br><button class="s" id="cx">Cerrar</button>`);$("cx").onclick=close}
 function setIcon(){const l=$("ati"),lg=(S.meta.prof||{}).logo||"icon-180.png";if(l&&l.getAttribute("href")!==lg)l.setAttribute("href",lg)}
 function render(){
   norm();setIcon();$("gear").style.display=tab==="rebano"?"":"none";$("tags").innerHTML=S.animals.map(a=>`<option value="${esc(a.tag)}">${esc(a.name)}</option>`).join("");$("pots").innerHTML=potreros().map(p=>`<option value="${esc(p)}">`).join("");
@@ -113,7 +117,7 @@ function vRebano(){
   const m=[...S.moves].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,15);
   const AL=alerts();
   const lb=S.meta.lastBackup,old=!lb||dd(today(),lb)>30;
-  return `${hdr()}<div class="card ${old?"warn":""}" data-rep><div class="row"><span class="b">📊 Reportes y respaldo</span><span>›</span></div><div class="mu">${lb?"Último respaldo: "+fmt(lb):"Todavía no hiciste un respaldo"}</div></div><div class="card" data-milk><div class="row"><span class="b">🥛 Producción de leche</span><span>hoy ${fmtMilk(S.milk.filter(m=>m.date===today()&&(m.days||1)===1).reduce((x,m)=>x+m.l,0))} ›</span></div></div><div class="card" data-tools><div class="row"><span class="b">🛠️ Herramientas de la finca</span><span>${S.tools.length} ›</span></div></div>${alHtml(AL)}<div class="card"><div class="mu">Total de animales</div><div class="big">${A.length}</div></div>
+  return `${hdr()}<div class="card ${old?"warn":""}" data-rep><div class="row"><span class="b">📊 Reportes y respaldo</span><span>›</span></div><div class="mu">${lb?"Último respaldo: "+fmt(lb):"Todavía no hiciste un respaldo"}</div></div><div class="card" data-milk><div class="row"><span class="b">🥛 Producción de leche</span><span>hoy ${fmtMilk(S.milk.filter(m=>m.date===today()&&(m.days||1)===1).reduce((x,m)=>x+m.l,0))} ›</span></div></div><div class="card" data-tools><div class="row"><span class="b">🛠️ Herramientas de la finca</span><span>${S.tools.length} ›</span></div></div>${alCard(AL)}<div class="card"><div class="mu">Total de animales</div><div class="big">${A.length}</div></div>
   <div class="g">${CATS.map(k=>`<div class="card"><div class="mu">${k}</div><div class="b" style="font-size:22px">${c[k]||0}</div></div>`).join("")}</div>
   <h2>Inventario del mes</h2><div class="card"><table class="rt">${invRows("mes").map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table></div>
   <h2>Últimos movimientos</h2>${m.map(x=>`<div class="card"><div class="row"><span class="b">${x.type}</span><span class="mu">${fmt(x.date)}</span></div><div class="mu">#${esc(x.tag)}${x.note?" · "+esc(x.note):""}</div></div>`).join("")||'<p class="mu">Sin movimientos todavía.</p>'}`;
@@ -544,17 +548,18 @@ function fMov(){
   <div id="gn"><label>N.º de arete / caravana *</label><input id="f_g" list="tags"></div><div id="gs"><label>Animal que sale del inventario *</label><select id="f_s">${[...act()].sort((a,b)=>a.tag.localeCompare(b.tag,"es",{numeric:true})).map(a=>`<option value="${a.id}">#${esc(a.tag)} ${esc(a.name)} · ${a.cat}</option>`).join("")}</select></div>
   <div id="nw"><label>Categoría</label>${catSel("f_c","Ternera")}</div>
   <label>Fecha</label><input type="date" id="f_d" value="${today()}">
-  <label>Madre (arete)</label>${parSel("f_mo","",0)}<label>Padre (arete o toro)</label>${parSel("f_pa","",1)}
+  <div id="nw2"><label>Nombre del animal (opcional)</label><input id="f_nm"><label>Madre (arete)</label>${parSel("f_mo","",0)}<label>Padre (arete o toro)</label>${parSel("f_pa","",1)}
   <label>Potrero / ubicación</label>${potSel("f_po","")}
+  <label>Foto del animal</label><div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:10px"><img id="mv_pv" class="ph" style="width:64px;height:64px;display:none"><input type="file" id="mv_f" accept="image/*" style="margin:0"></div></div>
   <label>Monto (solo compra o venta; se registra en Caja)</label><input id="f_m" inputmode="decimal">
   <label>Nota (comprador, causa…)</label><input id="f_n">
   <button id="ok">Guardar</button><br><br><button class="s" id="cx">Cancelar</button>`);
-  const tg=()=>{const n=["Nacimiento","Compra"].includes($("f_t").value);$("nw").style.display=n?"block":"none";$("gn").style.display=n?"block":"none";$("gs").style.display=n?"none":"block"};potNew("f_po","");catNew("f_c","Ternera");parNew("f_mo","",0);parNew("f_pa","",1);
+  const tg=()=>{const n=["Nacimiento","Compra"].includes($("f_t").value);$("nw").style.display=n?"block":"none";$("nw2").style.display=n?"block":"none";$("gn").style.display=n?"block":"none";$("gs").style.display=n?"none":"block"};let mph="";$("mv_f").onchange=e=>{const f=e.target.files[0];if(f)shrink(f,d=>{mph=d;$("mv_pv").src=d;$("mv_pv").style.display="block"})};potNew("f_po","");catNew("f_c","Ternera");parNew("f_mo","",0);parNew("f_pa","",1);
   $("f_t").onchange=tg;tg();
   $("ok").onclick=()=>{const type=$("f_t").value,bj=type==="Venta"||type==="Muerte",sel=bj?byId($("f_s").value):null,tag=bj?(sel?sel.tag:""):$("f_g").value.trim();if(!tag)return alert(bj?"Elegí el animal de la lista":"Falta el arete");
     const ex=bj?sel:act().find(a=>a.tag===tag),d=$("f_d").value||today();
     if(type==="Nacimiento"||type==="Compra"){if(ex&&!isSN(tag))return alert("Esa caravana ya existe");
-      S.animals.push({id:uid(),tag,name:"",cat:$("f_c").value,born:type==="Nacimiento"?d:"",breed:"",mom:$("f_mo").value.trim(),dad:$("f_pa").value.trim(),pot:$("f_po").value.trim(),status:"activo"})}
+      S.animals.push({id:uid(),tag,name:$("f_nm").value.trim(),photo:mph,cat:$("f_c").value,born:type==="Nacimiento"?d:"",breed:"",mom:$("f_mo").value.trim(),dad:$("f_pa").value.trim(),pot:$("f_po").value.trim(),status:"activo"})}
     else{if(!ex)return alert("No encontré un animal activo con esa caravana");ex.status="baja";ex.baja={type,date:d}}
     S.moves.push({id:uid(),type,tag,date:d,note:$("f_n").value.trim()});const mt=parseFloat($("f_m").value.replace(",","."));if(mt>0&&(type==="Venta"||type==="Compra"))S.fin.push({id:uid(),kind:type==="Venta"?"ingreso":"gasto",cat:type==="Venta"?"Venta de animales":"Compra de animales",amount:mt,date:d,note:"Arete "+tag});save();close();render()};
   $("cx").onclick=close}
@@ -572,6 +577,7 @@ document.addEventListener("click",e=>{
   const a=e.target.closest("[data-a]");if(a){detail(byId(a.dataset.a));return}
   if(e.target.closest("[data-milk]")){fLeche(today());return}
   if(e.target.closest("[data-more]")){aLim+=50;render();return}
+  if(e.target.closest("[data-al]")){fAlertas();return}
   if(e.target.closest("[data-po]")){pdfOwner();return}
   if(e.target.closest("[data-pd]")){pdfDescarte();return}
   if(e.target.closest("[data-pl]")){pdfList();return}
