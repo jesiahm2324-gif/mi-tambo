@@ -64,11 +64,12 @@ input[type=date]{display:block;min-width:0;max-width:100%;min-height:46px;-webki
 <nav id="nav"></nav>
 <div id="sh"><div id="shc"></div></div>
 <script>
-const CATS=["Vaca en ordeñe","Vaca seca","Vaquillona","Ternera","Ternero","Toro"];
+const CAT0=["Vaca en ordeñe","Vaca seca","Vaquillona","Ternera","Ternero","Novillo","Toro"],CATS=[...CAT0];
+const isM=c=>["Ternero","Novillo","Toro"].includes(c)||(S.meta.catList||[]).some(x=>x.name===c&&x.male);
 const SAN=["Vacunación","Tratamiento","Mastitis","Desparasitación","Control veterinario"];
 const MOV=["Nacimiento","Compra","Venta","Muerte"];
 let S={animals:[],events:[],moves:[]},tab="rebano",q="";
-const norm=()=>{S.animals=S.animals||[];S.events=S.events||[];S.moves=S.moves||[];S.repro=S.repro||[];S.fin=S.fin||[];S.meta=S.meta||{};S.tools=S.tools||[];S.milk=S.milk||[];S.potlog=S.potlog||[]};
+const norm=()=>{S.animals=S.animals||[];S.animals.forEach(a=>{if(a.owner){const o=["Adela Mejia","Jairo Mejia","Enrrique Mejia"].find(x=>x.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()===a.owner.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim());if(o)a.owner=o}});S.animals=S.animals||[];S.events=S.events||[];S.moves=S.moves||[];S.repro=S.repro||[];S.fin=S.fin||[];S.meta=S.meta||{};S.tools=S.tools||[];S.milk=S.milk||[];S.potlog=S.potlog||[];CATS.length=0;CATS.push(...CAT0,...(S.meta.catList||[]).map(c=>c.name))};
 const IDB=()=>new Promise((res,rej)=>{const r=indexedDB.open("mitambo",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const idbGet=async()=>{const d=await IDB();return new Promise((res,rej)=>{const q=d.transaction("kv").objectStore("kv").get("S");q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
 const idbSet=async v=>{const d=await IDB();return new Promise((res,rej)=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,"S");t.oncomplete=res;t.onerror=()=>rej(t.error)})};
@@ -100,7 +101,7 @@ function alHtml(L,nohead){
   return (nohead?"":`<h2>🔔 Alertas (${L.length})</h2>`)+L.map(x=>`<div class="card ${x.r<=7?"warn":""}" ${x.aid&&x.aid!=="ALL"?`data-a="${x.aid}"`:""}><div class="row"><span class="b">${x.i} ${esc(x.t)}</span><span>${x.m||w(x.r)}</span></div><div class="mu">${x.k==="vacia"?"Último parto: ":""}${fmt(x.d)}</div></div>`).join("")}
 function setIcon(){const l=$("ati"),lg=(S.meta.prof||{}).logo||"icon-180.png";if(l&&l.getAttribute("href")!==lg)l.setAttribute("href",lg)}
 function render(){
-  setIcon();$("gear").style.display=tab==="rebano"?"":"none";$("tags").innerHTML=S.animals.map(a=>`<option value="${esc(a.tag)}">${esc(a.name)}</option>`).join("");$("pots").innerHTML=potreros().map(p=>`<option value="${esc(p)}">`).join("");
+  norm();setIcon();$("gear").style.display=tab==="rebano"?"":"none";$("tags").innerHTML=S.animals.map(a=>`<option value="${esc(a.tag)}">${esc(a.name)}</option>`).join("");$("pots").innerHTML=potreros().map(p=>`<option value="${esc(p)}">`).join("");
   const NA=alerts().length;
   const tabs=[["rebano","🐄","Rebaño"],["animales","🏷️","Animales"],["sanidad","💉","Sanidad"],["repro","🤰","Preñez"],["caja","💰","Caja"]];
   $("nav").innerHTML=tabs.map(t=>`<a href="#" data-t="${t[0]}" class="${tab===t[0]?"on":""}"><b>${t[1]}</b>${t[2]}${t[0]==="rebano"&&NA?` <span style="background:var(--wa);color:var(--pt);border-radius:9px;padding:0 6px;font-size:11px">${NA}</span>`:""}</a>`).join("");
@@ -236,9 +237,9 @@ function repData(per,full){
   const o=[{h:"Rebaño (estado actual)",r:[["Total de animales",A.length],...CATS.map(k=>[k,cnt[k]||0])]},
    {h:"Movimientos del rebaño",r:E(by(mv,"type"))},
    {h:"Sanidad",r:E(by(ev,"type"))}];
-  {const M=["Ternero","Toro"],c={};A.forEach(a=>{const k=a.owner||"Sin asignar";c[k]=c[k]||{h:0,m:0};c[k][M.includes(a.cat)?"m":"h"]++});
+  {const c={};A.forEach(a=>{const k=a.owner||"Sin asignar";c[k]=c[k]||{h:0,m:0};c[k][isM(a.cat)?"m":"h"]++});
   const r=[];Object.entries(c).sort((x,y)=>x[0].localeCompare(y[0])).forEach(([k,v])=>r.push([k+" (total)",v.h+v.m],["   Hembras",v.h],["   Machos",v.m]));
-  const H=A.filter(a=>!M.includes(a.cat)).length;r.push(["TOTAL hembras",H],["TOTAL machos",A.length-H]);
+  const H=A.filter(a=>!isM(a.cat)).length;r.push(["TOTAL hembras",H],["TOTAL machos",A.length-H]);
   o.splice(1,0,{h:"Animales por dueño y sexo",r})}
   {const c={};A.forEach(a=>{const k=a.pot||"Sin potrero";c[k]=(c[k]||0)+1});o.push({h:"Animales por potrero",r:Object.entries(c).sort()})}
   o.push({h:"Inventario del período",r:invRows(per)});const ML=S.milk.filter(m=>inP(m.date));if(ML.length){const L=ML.reduce((x,m)=>x+m.l,0);o.push({h:"Producción de leche",r:[["Litros totales",L.toFixed(0)],["Vacas registradas",new Set(ML.map(m=>m.aid)).size],["Promedio L/vaca/día",(L/ML.length).toFixed(1)]]})}
@@ -288,7 +289,7 @@ const persist=()=>save();
 function ageP(d){if(!d)return null;const a=new Date(d+"T00:00"),n=new Date();n.setHours(0,0,0,0);if(a>n)return null;let y=n.getFullYear()-a.getFullYear(),m=n.getMonth()-a.getMonth(),x=n.getDate()-a.getDate();if(x<0){m--;x+=new Date(n.getFullYear(),n.getMonth(),0).getDate()}if(m<0){y--;m+=12}return[y,m,x]}
 const edad=d=>{const p=ageP(d);if(!p)return"";const t=[[p[0],"año","años"],[p[1],"mes","meses"],[p[2],"día","días"]].filter(z=>z[0]).map(z=>z[0]+" "+(z[0]===1?z[1]:z[2]));return t.length?(t.length>1?t.slice(0,-1).join(", ")+" y "+t[t.length-1]:t[0]):"0 días"};
 const edadC=d=>{const p=ageP(d);return p?p[0]+"a "+p[1]+"m "+p[2]+"d":""};
-const sexo=a=>["Ternero","Toro"].includes(a.cat)?"Macho":"Hembra";
+const sexo=a=>isM(a.cat)?"Macho":"Hembra";
 function cfg(){return S.meta.cfg||{}}
 const AD=()=>+cfg().days||30;
 const byTag=t=>t&&S.animals.find(x=>x.tag===t);
@@ -427,8 +428,14 @@ function fTool(t){t=t||{};let ph=t.photo||"";
   if(t.id)$("del").onclick=()=>{if(confirm("¿Eliminar esta herramienta?")){S.tools=S.tools.filter(x=>x!==t);save();fTools()}};
   $("cx").onclick=fTools}
 function shrink(file,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,360/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.6))};im.onerror=()=>alert("No pude leer la foto");im.src=r.result};r.readAsDataURL(file)}
-const OWN=["Adela Mejia","Jairo Mejía","Enrrique Mejia"];
-const lsel=(id,cur,base,key,ph)=>{const L=[...new Set([...base,...(S.meta[key]||[]),...(cur?[cur]:[])])];return `<select id="${id}"><option value="">${ph}</option>${L.map(p=>`<option ${p===cur?"selected":""}>${esc(p)}</option>`).join("")}<option value="__new">➕ Agregar otro…</option></select>`};
+const catSel=(id,cur)=>`<select id="${id}">${opts(CATS.concat(cur&&!CATS.includes(cur)?[cur]:[]),cur)}<option value="__new">➕ Agregar categoría…</option></select>`;
+const catNew=(id,cur)=>{$(id).addEventListener("change",e=>{if(e.target.value!=="__new")return;const n=(prompt("Nombre de la nueva categoría (ej: Novilla, Vaca horra)")||"").trim();if(!n){e.target.value=cur||CATS[0];return}
+  if(!CATS.some(c=>fold(c)===fold(n))){const male=confirm("¿Es una categoría de MACHOS?\n\nAceptar = macho\nCancelar = hembra");S.meta.catList=S.meta.catList||[];S.meta.catList.push({name:n,male});CATS.push(n);save()}
+  const nn=CATS.find(c=>fold(c)===fold(n))||n,o=document.createElement("option");o.value=o.textContent=nn;e.target.insertBefore(o,e.target.lastChild);e.target.value=nn})};
+const OWN=["Adela Mejia","Jairo Mejia","Enrrique Mejia"];
+const fold=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+const uniq=a=>{const m=new Set();return a.filter(x=>x&&!m.has(fold(x))&&m.add(fold(x)))};
+const lsel=(id,cur,base,key,ph)=>{const L=uniq([...base,...(S.meta[key]||[]),...(cur?[cur]:[])]);cur=L.find(x=>fold(x)===fold(cur))||cur;return `<select id="${id}"><option value="">${ph}</option>${L.map(p=>`<option ${p===cur?"selected":""}>${esc(p)}</option>`).join("")}<option value="__new">➕ Agregar otro…</option></select>`};
 const lnew=(id,cur,key,msg)=>{$(id).addEventListener("change",e=>{if(e.target.value!=="__new")return;const n=(prompt(msg)||"").trim();if(!n){e.target.value=cur||"";return}S.meta[key]=S.meta[key]||[];if(!S.meta[key].includes(n))S.meta[key].push(n);save();const o=document.createElement("option");o.textContent=n;e.target.insertBefore(o,e.target.lastChild);e.target.value=n})};
 const parSel=(id,cur,male,me)=>{const A=S.animals.filter(a=>a.id!==me&&(male?a.cat==="Toro":FEM.includes(a.cat))),vals=new Set(A.map(a=>a.tag)),ex=[...new Set([...(S.meta[male?"sireList":"damList"]||[]),...(male?S.repro.map(r=>r.bull).filter(Boolean):[]),...(cur?[cur]:[])])].filter(v=>v&&!vals.has(v));
   return `<select id="${id}"><option value="">— ${male?"Sin toro / padre":"Sin madre registrada"} —</option>${A.map(a=>`<option value="${esc(a.tag)}" ${a.tag===cur?"selected":""}>#${esc(a.tag)} ${esc(a.name)}${a.status==="baja"?" (baja)":""}</option>`).join("")}${ex.map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v)}</option>`).join("")}<option value="__new">➕ Otro (no registrado)…</option></select>`};
@@ -444,7 +451,7 @@ function fAnimal(a){a=a||{};
   sheet(`<h1>${a.id?"Editar":"Nuevo"} animal</h1>
   <label>N.º de arete / caravana *</label><input id="f_tag" value="${esc(a.tag)}">
   <label>Nombre (opcional)</label><input id="f_name" value="${esc(a.name)}">
-  <label>Categoría</label><select id="f_cat">${opts(CATS,a.cat)}</select>
+  <label>Categoría</label>${catSel("f_cat",a.cat)}
   <label>Fecha de nacimiento</label><input type="date" id="f_born" value="${a.born||""}"><div class="mu" id="f_age" style="margin:-6px 0 10px"></div>
   <label>Madre (n.º de arete)</label>${parSel("f_mom",a.mom,0,a.id)}
   <label>Padre (arete o nombre del toro)</label>${parSel("f_dad",a.dad,1,a.id)}
@@ -454,7 +461,7 @@ function fAnimal(a){a=a||{};
   <label>Nota</label><textarea id="f_note" rows="2" placeholder="Observaciones del animal">${esc(a.note)}</textarea>
   <label>Foto</label><div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:10px"><img id="pv" class="ph" style="width:64px;height:64px;${a.photo?"":"display:none"}" src="${a.photo||""}"><input type="file" id="f_ph" accept="image/*" style="margin:0"></div>
   <button id="ok">Guardar</button><br><br><button class="s" id="cx">Cancelar</button>`);
-  potNew("f_pot",a.pot);lnew("f_own",a.owner,"ownList","Nombre del dueño");parNew("f_mom",a.mom,0);parNew("f_dad",a.dad,1);
+  catNew("f_cat",a.cat);potNew("f_pot",a.pot);lnew("f_own",a.owner,"ownList","Nombre del dueño");parNew("f_mom",a.mom,0);parNew("f_dad",a.dad,1);
   const ag=()=>$("f_age").textContent=$("f_born").value?"Edad: "+edad($("f_born").value):"";$("f_born").oninput=ag;ag();
   let ph=a.photo||"";
   $("f_ph").onchange=e=>{const f=e.target.files[0];if(f)shrink(f,d=>{ph=d;$("pv").src=d;$("pv").style.display="block"})};
@@ -499,14 +506,14 @@ function fMov(){
   sheet(`<h1>Movimiento de rebaño</h1>
   <label>Tipo</label><select id="f_t">${opts(MOV)}</select>
   <div id="gn"><label>N.º de arete / caravana *</label><input id="f_g" list="tags"></div><div id="gs"><label>Animal que sale del inventario *</label><select id="f_s">${[...act()].sort((a,b)=>a.tag.localeCompare(b.tag,"es",{numeric:true})).map(a=>`<option value="${a.id}">#${esc(a.tag)} ${esc(a.name)} · ${a.cat}</option>`).join("")}</select></div>
-  <div id="nw"><label>Categoría</label><select id="f_c">${opts(CATS,"Ternera")}</select></div>
+  <div id="nw"><label>Categoría</label>${catSel("f_c","Ternera")}</div>
   <label>Fecha</label><input type="date" id="f_d" value="${today()}">
   <label>Madre (arete)</label>${parSel("f_mo","",0)}<label>Padre (arete o toro)</label>${parSel("f_pa","",1)}
   <label>Potrero / ubicación</label>${potSel("f_po","")}
   <label>Monto (solo compra o venta; se registra en Caja)</label><input id="f_m" inputmode="decimal">
   <label>Nota (comprador, causa…)</label><input id="f_n">
   <button id="ok">Guardar</button><br><br><button class="s" id="cx">Cancelar</button>`);
-  const tg=()=>{const n=["Nacimiento","Compra"].includes($("f_t").value);$("nw").style.display=n?"block":"none";$("gn").style.display=n?"block":"none";$("gs").style.display=n?"none":"block"};potNew("f_po","");parNew("f_mo","",0);parNew("f_pa","",1);
+  const tg=()=>{const n=["Nacimiento","Compra"].includes($("f_t").value);$("nw").style.display=n?"block":"none";$("gn").style.display=n?"block":"none";$("gs").style.display=n?"none":"block"};potNew("f_po","");catNew("f_c","Ternera");parNew("f_mo","",0);parNew("f_pa","",1);
   $("f_t").onchange=tg;tg();
   $("ok").onclick=()=>{const type=$("f_t").value,bj=type==="Venta"||type==="Muerte",sel=bj?byId($("f_s").value):null,tag=bj?(sel?sel.tag:""):$("f_g").value.trim();if(!tag)return alert(bj?"Elegí el animal de la lista":"Falta el arete");
     const ex=bj?sel:act().find(a=>a.tag===tag),d=$("f_d").value||today();
