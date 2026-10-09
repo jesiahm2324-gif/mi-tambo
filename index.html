@@ -53,7 +53,7 @@ nav a.on::after{content:"";position:absolute;left:30%;right:30%;bottom:0;height:
 .gear{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:14px;width:auto;padding:7px 11px;border-radius:20px;background:var(--card);color:var(--tx);border:1px solid var(--bd);z-index:5;font-size:17px;box-shadow:var(--sh)}
 input[type=date]{display:block;min-width:0;max-width:100%;min-height:46px;-webkit-appearance:none;appearance:none}
 #shc{overflow-x:hidden}
-.g{display:grid;grid-template-columns:1fr 1fr;gap:9px}.g .card{margin:0}.g .b{font-family:var(--sf)}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}.g .card{margin:0}.g .b{font-family:var(--sf)}
 .big{font:600 34px/1 var(--sf);color:var(--pr)}
 </style>
 </head>
@@ -68,7 +68,7 @@ const CAT0=["Vaca en ordeñe","Vaca seca","Vaquillona","Ternera","Ternero","Novi
 const isM=c=>["Ternero","Novillo","Toro"].includes(c)||(S.meta.catList||[]).some(x=>x.name===c&&x.male);
 const SAN=["Vacunación","Tratamiento","Mastitis","Desparasitación","Control veterinario"];
 const MOV=["Nacimiento","Compra","Venta","Muerte"];
-let aLim=50;let S={animals:[],events:[],moves:[]},tab="rebano",q="";
+let aLim=50,PZ={};let S={animals:[],events:[],moves:[]},tab="rebano",q="";
 const norm=()=>{S.animals=S.animals||[];S.animals.forEach(a=>{if(a.owner){const o=["Adela Mejia","Jairo Mejia","Enrrique Mejia"].find(x=>x.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()===a.owner.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim());if(o)a.owner=o}});S.animals=S.animals||[];S.events=S.events||[];S.moves=S.moves||[];S.repro=S.repro||[];S.fin=S.fin||[];S.meta=S.meta||{};S.tools=S.tools||[];S.milk=S.milk||[];S.potlog=S.potlog||[];CATS.length=0;CATS.push(...CAT0,...(S.meta.catList||[]).map(c=>c.name))};
 const IDB=()=>new Promise((res,rej)=>{const r=indexedDB.open("mitambo",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const idbGet=async()=>{const d=await IDB();return new Promise((res,rej)=>{const q=d.transaction("kv").objectStore("kv").get("S");q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
@@ -148,23 +148,23 @@ function rs(aid){let s={st:"sin datos"};const A0=byId(aid),ev=S.repro.filter(r=>
     else if(r.type==="Parto")s={st:"parida",lp:r.date};
     else if(r.type==="Aborto")s={st:"vacía",lp:s.lp}});
   return s}
+const plg=(k,t,n,body,hint,w)=>n?`<div class="card ${w?"warn":""}" data-sec="${k}"><div class="row"><span class="b">${t} (${n})</span><span>${PZ[k]?"⌄":"›"}</span></div>${!PZ[k]&&hint?`<div class="mu" style="${w?"color:inherit;opacity:.9":""}">${hint}</div>`:""}</div>${PZ[k]?body:""}`:"";
 function vRepro(){
   const t=today(),F=fem().map(a=>({a,s:rs(a.id)})),n=k=>F.filter(x=>x.s.st===k).length;
   const pr=F.filter(x=>x.s.st==="preñada"&&x.s.due).sort((x,y)=>x.s.due.localeCompare(y.s.due));
   const dg=F.filter(x=>x.s.st==="servida"&&dd(t,x.s.svc)>=30);
   const sec=pr.filter(x=>x.a.cat==="Vaca en ordeñe"&&dd(x.s.due,t)<=60);
-  const l=[...S.repro].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,25);
+  const l=[...S.repro].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,25),sd=F.filter(x=>x.s.st==="preñada"&&!x.s.due);
   const c=(x,m,w,at)=>`<div class="card ${w?"warn":""}" ${at||`data-a="${x.a.id}"`}><div class="row"><span class="b">${nm(x.a)}</span><span>${m}</span></div></div>`;
   return `<h1>Preñez y partos</h1><div class="g">
   <div class="card"><div class="mu">Preñadas</div><div class="big">${n("preñada")}</div></div>
   <div class="card"><div class="mu">Servidas (sin diagnóstico)</div><div class="big">${n("servida")}</div></div>
   <div class="card"><div class="mu">Vacías</div><div class="big">${n("vacía")}</div></div>
   <div class="card"><div class="mu">Paridas</div><div class="big">${n("parida")}</div></div></div>
-  ${dg.length?`<h2>Para diagnosticar</h2>${dg.map(x=>c(x,"servida hace "+dd(t,x.s.svc)+" d · confirmar ›",1,`data-cf="${x.a.id}"`)).join("")}`:""}
-  ${sec.length?`<h2>Para secar (≤60 días al parto)</h2>${sec.map(x=>c(x,"parto "+fmt(x.s.due),1)).join("")}`:""}
-  <h2>Próximos partos</h2>${pr.map(x=>{const r=dd(x.s.due,t);return c(x,r<=0?"¡Parto esperado!":fmt(x.s.due)+" · en "+r+" d",r<=15)}).join("")||'<p class="mu">Sin vacas preñadas con fecha.</p>'}
-  ${F.filter(x=>x.s.st==="preñada"&&!x.s.due).map(x=>c(x,"sin fecha · tocá para cargarla",1)).join("")}
-  <h2>Últimos eventos</h2>${l.map(e=>`<div class="card" data-r="${e.id}"><div class="row"><span class="b">${nm(byId(e.aid))}</span><span class="mu">${fmt(e.date)}</span></div><div>${e.type}${e.result?" · "+e.result:""}</div><div class="mu">${esc(e.detail)}${e.note?" · "+esc(e.note):""}</div>${e.due?`<div class="b" style="color:var(--pr)">Parto probable: ${fmt(e.due)}</div>`:""}</div>`).join("")||'<p class="mu">Sin eventos reproductivos.</p>'}`;
+  ${plg("dg","Para diagnosticar",dg.length,dg.map(x=>c(x,"servida hace "+dd(t,x.s.svc)+" d · confirmar ›",1,`data-cf="${x.a.id}"`)).join(""),"Tocá para ver y confirmar la preñez",1)}
+  ${plg("sec","Para secar (≤60 días al parto)",sec.length,sec.map(x=>c(x,"parto "+fmt(x.s.due),1)).join(""),sec[0]?nm(sec[0].a)+" · parto "+fmt(sec[0].s.due):"",1)}
+  ${plg("pr","Próximos partos",pr.length+sd.length,pr.map(x=>{const r=dd(x.s.due,t);return c(x,r<=0?"¡Parto esperado!":fmt(x.s.due)+" · en "+r+" d",r<=15)}).join("")+sd.map(x=>c(x,"sin fecha · tocá para cargarla",1)).join(""),pr[0]?"Próximo: "+nm(pr[0].a)+" · "+fmt(pr[0].s.due)+" ("+(dd(pr[0].s.due,t)<0?"pasó hace "+(-dd(pr[0].s.due,t))+" d":dd(pr[0].s.due,t)===0?"¡hoy!":"en "+dd(pr[0].s.due,t)+" d")+")":"Hay vacas preñadas sin fecha de parto",pr[0]?dd(pr[0].s.due,t)<=15:1)||'<p class="mu">Sin vacas preñadas.</p>'}
+  ${plg("ev","Últimos eventos",l.length,l.map(e=>`<div class="card" data-r="${e.id}"><div class="row"><span class="b">${nm(byId(e.aid))}</span><span class="mu">${fmt(e.date)}</span></div><div>${e.type}${e.result?" · "+e.result:""}</div><div class="mu">${esc(e.detail)}${e.note?" · "+esc(e.note):""}</div>${e.due?`<div class="b" style="color:var(--pr)">Parto probable: ${fmt(e.due)}</div>`:""}</div>`).join(""),l[0]?"Último: "+nm(byId(l[0].aid))+" · "+l[0].type+" · "+fmt(l[0].date):"")||'<p class="mu">Sin eventos reproductivos.</p>'}`;
 }
 function refreshDue(aid){S.repro.filter(e=>e.aid===aid&&e.type==="Diagnóstico"&&e.result==="Preñada"&&!e.man).forEach(e=>{const sv=S.repro.filter(z=>z.aid===aid&&z.type==="Servicio"&&z.date<=e.date).sort((p,q)=>q.date.localeCompare(p.date))[0];if(sv){e.preg=sv.date;e.due=addM(sv.date,9)}})}
 function fConf(aid){const a=byId(aid),sv=S.repro.filter(e=>e.aid===aid&&e.type==="Servicio").sort((x,y)=>y.date.localeCompare(x.date))[0];if(!sv)return alert("Esta vaca no tiene un servicio registrado.");
@@ -597,6 +597,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("[data-er]")){fER("mes");return}
   if(e.target.closest("[data-prof2]")){fProf();return}
   const pe=e.target.closest("[data-pe]");if(pe){const p=S.meta.people.find(x=>x.id===pe.dataset.pe);fPerson(p.kind,p);return}
+  const sc=e.target.closest("[data-sec]");if(sc){PZ[sc.dataset.sec]=!PZ[sc.dataset.sec];render();return}
   const cfb=e.target.closest("[data-cf]");if(cfb){fConf(cfb.dataset.cf);return}
   const tl=e.target.closest("[data-tl]");if(tl){fTool(S.tools.find(x=>x.id===tl.dataset.tl));return}
   const tls=e.target.closest("[data-tools]");if(tls){fTools();return}
