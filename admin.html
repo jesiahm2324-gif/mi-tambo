@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><title>Administrador Mi Tambo</title>
+<style>
+:root{--bg:#eceee9;--card:#fff;--tx:#14231b;--mu:#5d6c63;--pr:#1f4d3a;--bd:#d8ddd5;--ac:#a8832f;--wa:#b3382c}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1511;--card:#15201a;--tx:#e8efe9;--mu:#91a196;--pr:#62b588;--bd:#24322a;--ac:#d0a94f;--wa:#ff8f80}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,system-ui,Arial,sans-serif;padding:20px 16px 60px}
+main{max-width:560px;margin:auto}h1{font:600 26px/1.1 ui-serif,Georgia,serif;margin:6px 0 4px}h2{font:600 17px ui-serif,Georgia,serif;margin:24px 0 10px;border-left:4px solid var(--ac);padding-left:10px}
+.mu{color:var(--mu);font-size:14px}label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:12px;border-radius:12px;border:1px solid var(--bd);background:var(--card);color:var(--tx)}
+button{font:inherit;font-weight:600;border:0;border-radius:14px;padding:13px 16px;background:var(--pr);color:#fff;width:100%;margin-top:10px;box-shadow:0 3px 0 #0006}button:active{transform:translateY(2px)}
+button.s{background:transparent;color:var(--tx);border:1px solid var(--bd);box-shadow:none}button.w{background:#25a85a}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:12px 14px;margin:9px 0;border-bottom:3px solid var(--bd)}.card.r{border-color:var(--wa)}.card.y{border-color:var(--ac)}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center}.b{font-weight:600}
+.code{font:12px/1.3 ui-monospace,Menlo,monospace;word-break:break-all;background:var(--bg);border-radius:10px;padding:10px;margin:8px 0;user-select:all;-webkit-user-select:all}
+.mini{display:flex;gap:8px}.mini button{margin-top:8px;padding:9px 6px;font-size:14px}.er{color:var(--wa);font-weight:600;margin-top:8px}
+</style></head><body><main id="m"></main>
+<script>
+const BLOB={"s": "YQDfQQF5pn3RQHaX9iO7bA==", "iv": "Mz6H2Vy2TvPya+4E", "ct": "aRra/1v3ZCInDrqCoxDl9OLcQkfoRHevXXwCWPjcyUnh8egoYJ7Hoz2BS1yOf63w62tjpYGdj8ynZR8kFOgGuLBgyxoG4Ci/BbDSHtKOf6ARE36cKbFIY/v4gpvlqw2PWOiGLzOr2v8HqpKmY8v5G/Nd62AvurO3lcC7zm+Y0PVkxBsqBFRzLD+x1U9ooVgbIJkPukgmm9Rugour6+f4y18pMYtHr+BbEcttWapwZm64YGoepNtji6Ki0WFIkgnsLW7TuWbZvcTb8Q7/4sq41IR7yGfMmidu9Uk3K2wm"};
+const $=i=>document.getElementById(i),LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
+const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u))),unb=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+const b64u=u=>b64(u).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ymd=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");
+const today=()=>ymd(new Date()),fmt=d=>d?d.split("-").reverse().join("/"):"";
+const addM=(n)=>{const x=new Date(),k=x.getDate();x.setMonth(x.getMonth()+n);if(x.getDate()!==k)x.setDate(0);return ymd(x)};
+const dd=(a,b)=>Math.round((new Date(a+"T00:00")-new Date(b+"T00:00"))/864e5);
+let PRV=null,reg=[];
+const loadReg=()=>{try{reg=JSON.parse(LS("mt_reg")||"[]")}catch(e){reg=[]}},saveReg=()=>LS("mt_reg",JSON.stringify(reg));
+async function dec(blob,pass){const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(pass),"PBKDF2",false,["deriveKey"]);
+  const k=await crypto.subtle.deriveKey({name:"PBKDF2",salt:unb(blob.s),iterations:600000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["decrypt"]);
+  const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb(blob.iv)},k,unb(blob.ct));return JSON.parse(new TextDecoder().decode(pt))}
+async function enc(jwk,pass){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(pass),"PBKDF2",false,["deriveKey"]);
+  const k=await crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:600000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt"]);
+  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},k,new TextEncoder().encode(JSON.stringify(jwk)));return{s:b64(salt),iv:b64(iv),ct:b64(new Uint8Array(ct))}}
+function lock(){const m=$("m");m.innerHTML=`<h1>🔐 Administrador</h1><p class="mu">Mi Tambo · generador de códigos de activación</p><label>Contraseña de administrador</label><input id="pw" type="password" autocomplete="off"><div class="er" id="er"></div><button id="go">Entrar</button>`;
+  $("go").onclick=async()=>{$("go").textContent="Verificando...";try{const b=JSON.parse(LS("mt_blob")||"null")||BLOB;PRV=await dec(b,$("pw").value.trim());main()}catch(e){$("go").textContent="Entrar";$("er").textContent="Contraseña incorrecta."}}}
+let sel=null;
+function status(e){if(!e)return{t:"Sin vencimiento",c:""};const d=dd(e,today());return d<0?{t:"Vencido hace "+(-d)+" días",c:"r"}:{t:"Activo · "+d+" días restantes",c:d<=30?"y":""}}
+function main(){loadReg();const m=$("m");
+  m.innerHTML=`<h1>🔑 Códigos de activación</h1><p class="mu">Generá el código para cada ganadero y definí cuánto tiempo tiene acceso.</p>
+  <h2>Nuevo código o renovación</h2><label>Nombre del ganadero o ganadería</label><input id="n" placeholder="Ej: Finca La Esperanza"><label>ID del teléfono (lo envía el ganadero)</label><input id="d" placeholder="XXXX-XXXX" autocapitalize="characters" autocomplete="off">
+  <label>Tiempo de acceso (desde hoy)</label><select id="t"><option value="1">1 mes</option><option value="3">3 meses</option><option value="6">6 meses</option><option value="12" selected>1 año</option><option value="24">2 años</option><option value="0">Sin vencimiento</option><option value="x">Elegir fecha exacta</option></select><input type="date" id="x" style="display:none;margin-top:8px"><div class="mu" id="vf" style="margin-top:6px"></div><div class="er" id="er"></div><button id="gen">Generar código</button><div id="out"></div>
+  <h2>Ganaderos registrados (${reg.length})</h2><div id="lst"></div>
+  <h2>Registro y contraseña</h2><div class="mini"><button class="s" id="ex">Copiar respaldo del registro</button><button class="s" id="im">Importar registro</button></div><button class="s" id="pwc">Cambiar contraseña de administrador</button>`;
+  const exp=()=>{const v=$("t").value;return v==="0"?"":v==="x"?$("x").value:addM(+v)};
+  const vf=()=>{$("x").style.display=$("t").value==="x"?"block":"none";const e=exp();$("vf").textContent=$("t").value==="0"?"El acceso no vence.":e?"Vence el "+fmt(e):""};$("t").onchange=vf;$("x").onchange=vf;vf();
+  $("gen").onclick=async()=>{const n=$("n").value.trim(),d=$("d").value.toUpperCase().replace(/[^A-Z0-9]/g,""),e=exp();$("er").textContent="";
+    if(!n)return $("er").textContent="Escribí el nombre.";if(!/^[A-Z0-9]{8}$/.test(d))return $("er").textContent="El ID debe tener 8 letras o números (XXXX-XXXX).";if($("t").value==="x"&&(!e||e<today()))return $("er").textContent="Elegí una fecha futura.";
+    const p=b64u(new TextEncoder().encode(JSON.stringify({n,d,e}))),key=await crypto.subtle.importKey("jwk",PRV,{name:"ECDSA",namedCurve:"P-256"},false,["sign"]),sg=await crypto.subtle.sign({name:"ECDSA",hash:"SHA-256"},key,new TextEncoder().encode(p)),code=p+"."+b64u(sg);
+    reg=reg.filter(r=>r.d!==d);reg.push({n,d,e,code,at:today()});saveReg();show(reg[reg.length-1]);list()};
+  $("ex").onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(reg));alert("Registro copiado. Pegalo en una nota para guardarlo.")}catch(e){prompt("Copiá el registro:",JSON.stringify(reg))}};
+  $("im").onclick=()=>{const t=prompt("Pegá el registro copiado:");if(!t)return;try{const a=JSON.parse(t);if(!Array.isArray(a))throw 0;const mp={};[...reg,...a].forEach(r=>{if(r&&r.d&&r.code)mp[r.d]=r});reg=Object.values(mp);saveReg();main()}catch(e){alert("El texto no es un registro válido.")}};
+  $("pwc").onclick=async()=>{const p=prompt("Nueva contraseña (mínimo 12 caracteres):");if(!p)return;if(p.trim().length<12)return alert("Muy corta. Usá al menos 12 caracteres.");LS("mt_blob",JSON.stringify(await enc(PRV,p.trim())));alert("Contraseña cambiada en este teléfono. Anotala: si la olvidás tendrás que usar la original.")};
+  list()}
+function show(r){const msg="Tu código de activación de Mi Tambo ("+r.n+")"+(r.e?", válido hasta el "+fmt(r.e):"")+":\n\n"+r.code;
+  $("out").innerHTML=`<div class="card y"><div class="b">✅ Código generado para ${esc(r.n)}</div><div class="mu">${r.e?"Vence el "+fmt(r.e):"Sin vencimiento"}</div><div class="code">${esc(r.code)}</div><div class="mini"><button class="w" id="wa">WhatsApp</button><button class="s" id="cp">Copiar</button></div></div>`;
+  $("wa").onclick=()=>{location.href="https://wa.me/?text="+encodeURIComponent(msg)};$("cp").onclick=async()=>{try{await navigator.clipboard.writeText(r.code);$("cp").textContent="✅ Copiado"}catch(e){prompt("Copiá el código:",r.code)}}}
+function list(){const hh=document.querySelectorAll('h2');hh.forEach(h=>{if(h.textContent.startsWith('Ganaderos registrados'))h.textContent='Ganaderos registrados ('+reg.length+')'});const L=[...reg].sort((a,b)=>(a.e||"9999").localeCompare(b.e||"9999"));$("lst").innerHTML=L.map(r=>{const s=status(r.e);return `<div class="card ${s.c}"><div class="row"><span class="b">${esc(r.n)}</span><span class="mu">${r.d.slice(0,4)}-${r.d.slice(4)}</span></div><div class="mu">${s.t}${r.e?" · vence "+fmt(r.e):""}</div><div class="mini"><button class="s" data-re="${r.d}">Renovar</button><button class="s" data-cp="${r.d}">Ver código</button><button class="s" data-rm="${r.d}">Quitar</button></div></div>`}).join("")||'<p class="mu">Todavía no generaste códigos.</p>';
+  $("lst").querySelectorAll("[data-re]").forEach(b=>b.onclick=()=>{const r=reg.find(x=>x.d===b.dataset.re);$("n").value=r.n;$("d").value=r.d.slice(0,4)+"-"+r.d.slice(4);scrollTo({top:0,behavior:"smooth"})});
+  $("lst").querySelectorAll("[data-cp]").forEach(b=>b.onclick=()=>show(reg.find(x=>x.d===b.dataset.cp)));
+  $("lst").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{if(confirm("¿Quitar del registro? El código ya entregado seguirá funcionando hasta su fecha.")){reg=reg.filter(x=>x.d!==b.dataset.rm);saveReg();main()}})}
+lock();
+</script></body></html>
