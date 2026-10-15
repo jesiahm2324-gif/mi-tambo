@@ -56,6 +56,58 @@ input[type=date]{display:block;min-width:0;max-width:100%;min-height:46px;-webki
 #shc{overflow-x:hidden}
 .g{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}.g .card{margin:0}.g .b{font-family:var(--sf)}
 .big{font:600 34px/1 var(--sf);color:var(--pr)}
+
+/* ===== Diseño moderno ===== */
+:root{--prd:#123226;--hero1:#14382a;--hero2:#1f5a43;--hero3:#2f7f5c}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--prd:#2b6f4e}}
+:root[data-theme="dark"]{--prd:#2b6f4e}
+html,body{background-color:var(--bg)}
+body{background-image:radial-gradient(520px 320px at 100% 0,#a8832f1c,transparent),radial-gradient(520px 360px at 0 0,#1f4d3a1c,transparent);background-repeat:no-repeat}
+main{padding-top:14px}
+h1{font-size:28px;letter-spacing:-.02em}
+main>h1:first-child,.row>h1{position:relative;padding-left:14px}
+main>h1:first-child::before,.row>h1::before{content:"";position:absolute;left:0;top:.14em;bottom:.14em;width:5px;border-radius:4px;background:linear-gradient(var(--ac),var(--pr))}
+h2{border:0;padding:0 0 0 10px;margin:22px 0 10px;border-left:4px solid var(--ac);font-size:16px}
+.card{border-radius:18px;border-bottom:3px solid color-mix(in srgb,var(--bd) 60%,var(--pr) 40%);background:linear-gradient(180deg,color-mix(in srgb,var(--card) 92%,#fff 8%),var(--card));transition:transform .08s,box-shadow .08s}
+.card.warn{border-bottom-color:var(--wa)}
+.card[data-a]:active,.card[data-e]:active,.card[data-r]:active,.card[data-f]:active,.card[data-sec]:active,.card[data-al]:active{transform:translateY(2px)}
+button{box-shadow:0 3px 0 var(--prd),0 10px 16px -8px #0006;border-radius:15px;transition:transform .08s,box-shadow .08s}
+button:active{transform:translateY(3px);box-shadow:0 0 0 var(--prd)}
+button.s{box-shadow:0 2px 0 var(--bd)}button.d{box-shadow:0 2px 0 color-mix(in srgb,var(--wa) 40%,transparent)}
+.ib{box-shadow:0 2px 0 var(--bd),var(--sh)}
+nav{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:616px;margin:auto;border:1px solid var(--bd);border-radius:28px;padding:6px;box-shadow:0 14px 34px -12px #000a,0 2px 0 var(--bd)}
+nav a{border-radius:22px;padding:7px 0 5px;transition:background .15s}
+nav a.on{background:color-mix(in srgb,var(--pr) 14%,transparent)}nav a.on::after{display:none}
+nav a b{font-size:21px;margin-bottom:1px}
+.fab{bottom:calc(92px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,#d9b45a,var(--ac));box-shadow:0 4px 0 #7b5f1f,0 14px 24px -8px #0008;font-weight:700}
+.fab:active{box-shadow:0 1px 0 #7b5f1f}
+.gear{position:absolute;top:calc(env(safe-area-inset-top,0px) + 26px);right:28px;background:#ffffff26;color:#fff;border:1px solid #ffffff55;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:none}
+.hero{position:relative;overflow:hidden;border-radius:26px;padding:20px 18px 16px;margin:0 0 14px;color:#fff;background:radial-gradient(260px 160px at 95% 0,#d0a94f55,transparent),linear-gradient(150deg,var(--hero1),var(--hero2) 60%,var(--hero3));box-shadow:0 4px 0 var(--prd),0 18px 30px -14px #0009}
+.hero::after{content:"";position:absolute;right:-40px;bottom:-60px;width:180px;height:180px;border-radius:50%;border:30px solid #ffffff0d}
+.hero .ph{width:62px;height:62px;border:0;box-shadow:0 0 0 3px #d0a94f,0 6px 14px -4px #0008}
+.hero .hl{display:flex;align-items:center;gap:14px;position:relative;z-index:1;padding-right:46px}
+.hero .lg0{width:62px;height:62px;border-radius:50%;background:#ffffff1f;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 0 0 3px #d0a94f;flex:none}
+.hero .eb{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#e9d08a;font-weight:700}
+.hero h1{margin:2px 0 2px;color:#fff;padding:0;font-size:25px;line-height:1.1}.hero h1::before{display:none}
+.hero .sb{font-size:13px;color:#ffffffb8;overflow-wrap:anywhere}
+.hero .ks{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:16px;position:relative;z-index:1}
+.hero .k{background:#ffffff1a;border:1px solid #ffffff26;border-radius:14px;padding:8px 4px 7px;text-align:center;box-shadow:inset 0 -3px 0 #0003}
+.hero .k b{display:block;font:700 21px/1.05 var(--sf);font-variant-numeric:tabular-nums}.hero .k.w{background:#ffb4a826;border-color:#ffb4a866}
+.hero .k span{display:block;font-size:10.5px;letter-spacing:.04em;color:#ffffffc4;margin-top:2px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.tile{margin:0!important;padding:13px 12px 12px!important;display:flex;flex-direction:column;gap:7px;min-height:104px}
+.tile .ti{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;background:linear-gradient(145deg,var(--c1),var(--c2));box-shadow:0 3px 0 var(--c3),0 8px 12px -6px #0006;color:#fff}
+.tile .tt{font:600 15.5px/1.15 var(--sf)}.tile .ts{font-size:12.5px;color:var(--mu);margin-top:-3px}
+.tile.warn .ts{color:inherit;opacity:.9}
+.cr{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--bd)}.cr:last-child{border:0}
+.cr>span:first-child{flex:0 0 46%;font-size:15px}.cr b{font:600 18px/1 var(--sf);font-variant-numeric:tabular-nums;min-width:30px;text-align:right}
+.cb{flex:1;height:9px;border-radius:6px;background:color-mix(in srgb,var(--bd) 70%,transparent);overflow:hidden;box-shadow:inset 0 1px 2px #0002}.cb i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--pr),var(--ac))}
+.kg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-top:4px solid var(--pr);border-bottom:3px solid color-mix(in srgb,var(--bd) 60%,var(--pr) 40%);border-radius:16px;padding:10px 12px;box-shadow:var(--sh)}
+.kpi .kl{font-size:12px;color:var(--mu);letter-spacing:.02em}.kpi .kv{font:700 25px/1.1 var(--sf);font-variant-numeric:tabular-nums;margin-top:2px}.kpi .kn{font-size:12px;color:var(--mu);margin-top:2px}
+.kpi.k-g{border-top-color:#2f9d62}.kpi.k-y{border-top-color:#d0a94f}.kpi.k-r{border-top-color:var(--wa)}
+.chart{background:var(--card);border:1px solid var(--bd);border-bottom:3px solid color-mix(in srgb,var(--bd) 60%,var(--pr) 40%);border-radius:16px;padding:10px 6px 4px;margin-bottom:10px;box-shadow:var(--sh)}
+.chart .ct{font:600 14px/1.2 var(--sf);padding:0 8px 4px}.chart svg{width:100%;height:auto;display:block}.chart text{fill:var(--mu)}
 </style>
 </head>
 <body>
@@ -119,7 +171,11 @@ function vRebano(){
   const m=[...S.moves].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
   const AL=alerts(),inv=invRows("mes");
   const lb=S.meta.lastBackup,old=!lb||dd(today(),lb)>30;
-  return `${hdr()}<div class="card ${old?"warn":""}" data-rep><div class="row"><span class="b">📊 Reportes y respaldo</span><span>›</span></div><div class="mu">${lb?"Último respaldo: "+fmt(lb):"Todavía no hiciste un respaldo"}</div></div><div class="card" data-milk><div class="row"><span class="b">🥛 Producción de leche</span><span>hoy ${fmtMilk(milkToday())} ›</span></div></div><div class="card" data-tools><div class="row"><span class="b">🛠️ Herramientas de la finca</span><span>${S.tools.length} ›</span></div></div>${alCard(AL)}<div class="card" style="padding:4px 15px"><div class="row" style="padding:9px 0;border-bottom:1px solid var(--bd)"><span class="b" style="font-size:16px">Total de animales</span><span class="big" style="font-size:28px;font-variant-numeric:tabular-nums">${A.length}</span></div>${CATS.map((k,i)=>`<div class="row" style="padding:7px 0;${i<CATS.length-1?"border-bottom:1px solid var(--bd)":""}"><span>${k}</span><span style="font:600 18px/1 var(--sf);font-variant-numeric:tabular-nums">${c[k]||0}</span></div>`).join("")}</div>
+  return `${hdr()}<div class="tiles">
+  <div class="card tile ${old?"warn":""}" data-rep><div class="ti" style="--c1:#3b8f6a;--c2:#1f5a43;--c3:#123226">📊</div><div class="tt">Reportes y respaldo</div><div class="ts">${lb?"Respaldo: "+fmt(lb):"Sin respaldo aún"}</div></div>
+  <div class="card tile" data-an><div class="ti" style="--c1:#e0b955;--c2:#a8832f;--c3:#6b5218">📈</div><div class="tt">Análisis e indicadores</div><div class="ts">Gráficos e informe</div></div>
+  <div class="card tile" data-milk><div class="ti" style="--c1:#6aa9e8;--c2:#2f6fb5;--c3:#1b4478">🥛</div><div class="tt">Producción de leche</div><div class="ts">Hoy ${fmtMilk(milkToday())}</div></div>
+  <div class="card tile" data-tools><div class="ti" style="--c1:#e58f5b;--c2:#b4531f;--c3:#7a3611">🛠️</div><div class="tt">Herramientas</div><div class="ts">${S.tools.length} registradas</div></div></div>${alCard(AL)}<div class="card" style="padding:6px 15px"><div class="row" style="padding:8px 0;border-bottom:1px solid var(--bd)"><span class="b" style="font:600 17px var(--sf)">Total de animales</span><span class="big" style="font-size:30px;font-variant-numeric:tabular-nums">${A.length}</span></div>${(mx=>CATS.map(k=>`<div class="cr"><span>${k}</span><span class="cb"><i style="width:${Math.round((c[k]||0)/mx*100)}%"></i></span><b>${c[k]||0}</b></div>`).join(""))(Math.max(1,...CATS.map(k=>c[k]||0)))}</div>
   ${plg2("inv","📦 Inventario del mes",`<div class="card"><table class="rt">${inv.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table></div>`,"Inicial "+inv[0][1]+" · Final "+inv[5][1])}
   ${plg2("mov","📝 Últimos movimientos ("+S.moves.length+")",m.map(x=>`<div class="card"><div class="row"><span class="b">${x.type}</span><span class="mu">${fmt(x.date)}</span></div><div class="mu">#${esc(x.tag)}${x.note?" · "+esc(x.note):""}</div></div>`).join("")||'<p class="mu">Sin movimientos todavía.</p>',m[0]?m[0].type+" · #"+esc(m[0].tag)+" · "+fmt(m[0].date):"Sin movimientos todavía")}`;
 }
@@ -338,8 +394,14 @@ function mkPDF(items,embed){const W=595,H=842,M=40,pages=[],imgs=[];let cur=[],y
   const jpg=d=>{const b=atob(d.split(",")[1]),c=i=>b.charCodeAt(i);let i=2,w=1,h=1;while(i<b.length){if(c(i)!==255){i++;continue}const m=c(i+1);if(m>=192&&m<=207&&m!==196&&m!==200&&m!==204){h=c(i+5)*256+c(i+6);w=c(i+7)*256+c(i+8);break}i+=2+c(i+2)*256+c(i+3)}return{b,w,h}};
   items.forEach(it=>{
     if(it.brk){if(cur.length)np();return}
+    if(it.chart){const c=it.chart,hx=h=>{const n=parseInt(h.slice(1),16);return [(n>>16&255)/255,(n>>8&255)/255,(n&255)/255].map(v=>v.toFixed(3)).join(" ")};if(y-c.h-8<M)np();const top=y-4;
+      c.prim.forEach(p=>{if(p.k==="r")cur.push(`${hx(p.c)} rg ${(M+p.x).toFixed(1)} ${(top-p.y-p.h).toFixed(1)} ${p.w.toFixed(1)} ${p.h.toFixed(1)} re f`);
+        else if(p.k==="p")cur.push(`${hx(p.c)} rg `+p.p.map((q,i)=>`${(M+q[0]).toFixed(1)} ${(top-q[1]).toFixed(1)} ${i?"l":"m"}`).join(" ")+" f");
+        else if(p.k==="l")cur.push(`${hx(p.c)} RG 0.4 w ${(M+p.x1).toFixed(1)} ${(top-p.y1).toFixed(1)} m ${(M+p.x2).toFixed(1)} ${(top-p.y2).toFixed(1)} l S`);
+        else if(p.k==="t"){const q=raw(p.t),w=q.length*p.s*.5,x=M+p.x-(p.a==="m"?w/2:p.a==="e"?w:0);cur.push(`${hx(p.c||"#444444")} rg BT /F1 ${p.s} Tf ${x.toFixed(1)} ${(top-p.y).toFixed(1)} Td (${E(q)}) Tj ET`)}});
+      cur.push("0 g");y=top-c.h-6;return}
     if(it.img||it.img2){try{const A=[],add=(d,w,h,r)=>{if(!d||!/^data:image\/jpe?g/.test(d))return;const j=jpg(d),k0=Math.min(w/j.w,h/j.h);A.push({pw:j.w*k0,ph:j.h*k0,r,k:imgs.push(j)-1})};add(it.img,it.w||150,170,0);add(it.img2,it.w2||110,110,1);if(!A.length)return;const H2=Math.max(...A.map(a=>a.ph));if(y-H2-8<M)np();const top=y-6;A.forEach(a=>cur.push(`q ${a.pw.toFixed(1)} 0 0 ${a.ph.toFixed(1)} ${(a.r?W-M-a.pw:M).toFixed(1)} ${(top-a.ph).toFixed(1)} cm /Im${a.k} Do Q`));y=top-H2-8}catch(e){}return}
-    const sz=it.sz||10,lh=sz+5,xs=it.x||[M];if(y-lh<M)np();y-=lh;
+    const sz=it.sz||10,lh=sz+5,xs=it.x||[M];if(y-lh<M||(it.keep&&y-175<M))np();y-=lh;
     (it.c||[]).forEach((t,i)=>{const nx=xs[i+1]||W-M,mx=Math.max(3,Math.floor((nx-xs[i]-4)/(sz*.52)));let q=raw(t);if(q.length>mx)q=q.slice(0,mx-1)+".";cur.push(`BT /F${it.b?2:1} ${sz} Tf ${xs[i]} ${y} Td (${E(q)}) Tj ET`)});
     if(it.line)cur.push(`0.5 w ${M} ${y-3} m ${W-M} ${y-3} l S`)});
   np();let out="%PDF-1.4\n";const offs=[],o=t=>{offs.push(out.length);out+=t};
@@ -357,7 +419,7 @@ function mkPDF(items,embed){const W=595,H=842,M=40,pages=[],imgs=[];let cur=[],y
 async function shareFile(f,ok){try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});ok&&ok();return}}catch(e){if(e&&e.name==="AbortError")return}
   try{const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);ok&&ok()}catch(e){alert("No se pudo guardar el archivo en este dispositivo.")}}
 function sharePDF(name,items,embed,ok){const f=new File([mkPDF(items,embed)],name,{type:"application/pdf"}),u=URL.createObjectURL(f);
-  const row=it=>it.brk?'<hr style="border:0;border-top:2px dashed #bbb;margin:16px 0">':(it.img||it.img2)?`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin:6px 0">${it.img?`<img src="${it.img}" style="max-width:150px;max-height:170px;border-radius:6px">`:"<span></span>"}${it.img2?`<img src="${it.img2}" style="max-width:110px;max-height:110px;object-fit:contain">`:""}</div>`:`<div style="display:grid;grid-template-columns:${(it.c||[""]).length>2?`repeat(${it.c.length},1fr)`:(it.c||[]).length===2?"1fr auto":"1fr"};gap:6px;font-size:${Math.max(11,(it.sz||10)+2)}px;${it.b?"font-weight:700;":""}${it.line?"border-bottom:1px solid #999;padding-bottom:2px;":""}padding:2px 0;word-break:break-word">${(it.c||[""]).map(t=>`<span>${esc(t)}</span>`).join("")}</div>`;
+  const row=it=>it.chart?chartSVG(it.chart):it.brk?'<hr style="border:0;border-top:2px dashed #bbb;margin:16px 0">':(it.img||it.img2)?`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin:6px 0">${it.img?`<img src="${it.img}" style="max-width:150px;max-height:170px;border-radius:6px">`:"<span></span>"}${it.img2?`<img src="${it.img2}" style="max-width:110px;max-height:110px;object-fit:contain">`:""}</div>`:`<div style="display:grid;grid-template-columns:${(it.c||[""]).length>2?`repeat(${it.c.length},1fr)`:(it.c||[]).length===2?"1fr auto":"1fr"};gap:6px;font-size:${Math.max(11,(it.sz||10)+2)}px;${it.b?"font-weight:700;":""}${it.line?"border-bottom:1px solid #999;padding-bottom:2px;":""}padding:2px 0;word-break:break-word">${(it.c||[""]).map(t=>`<span>${esc(t)}</span>`).join("")}</div>`;
   sheet(`<h1>📄 Vista previa</h1><p class="mu">${esc(name)}</p><div style="background:#fff;color:#111;border-radius:10px;padding:12px">${items.map(row).join("")}</div><div style="position:sticky;bottom:calc(-22px - env(safe-area-inset-bottom,0px));background:var(--bg);padding:10px 0 calc(22px + env(safe-area-inset-bottom,0px));margin:10px 0 calc(-22px - env(safe-area-inset-bottom,0px));display:flex;gap:8px;border-top:1px solid var(--bd)"><button class="pv1" style="flex:1.3;padding:12px 6px;font-size:14px">Compartir / Guardar</button><button class="s pv2" style="flex:1;padding:12px 6px;font-size:14px">Abrir PDF</button><button class="s" id="cx" style="flex:.8;padding:12px 6px;font-size:14px">Cerrar</button></div>`);
   document.querySelectorAll(".pv1").forEach(b=>b.onclick=()=>shareFile(f,ok));
   document.querySelectorAll(".pv2").forEach(b=>b.onclick=()=>{const a=document.createElement("a");a.href=u;a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove()});
@@ -389,6 +451,56 @@ function xlsxAnimales(ids){const A=[...act()].filter(a=>!ids||ids.has(a.id)).sor
   R=A.map(a=>{const m=isM(a.cat),s=m?{}:rs(a.id),n=m?"":births(a).length+S.animals.filter(x=>isMom(x,a)&&!x.born).length;return [a.tag,a.name||"",a.cat,sexo(a),a.born?{d:a.born}:"",edad(a.born),a.breed||"",a.owner||"",a.pot||"",a.mom?pname(a.mom):"",a.dad?pname(a.dad):"",m?"":s.st,m&&!s.due?"":(s.due?{d:s.due}:""),n,a.note||""]});
   const f=new File([makeXlsx("Animales",H,R,[14,20,16,9,18,24,16,18,16,22,22,18,15,12,30])],(ids?"animales-seleccionados-":"listado-animales-")+today()+".xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   shareFile(f)}
+
+/* ===== Análisis e indicadores ===== */
+const MN=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"],MNL=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const mLast=(M,n)=>{const o=[];for(let i=n-1;i>=0;i--)o.push(addM(M+"-01",-i).slice(0,7));return o};
+const mEndD=M=>addD(addM(M+"-01",1),-1),mLbl=M=>MN[+M.slice(5)-1]+" "+M.slice(2,4),mLong=M=>MNL[+M.slice(5)-1]+" de "+M.slice(0,4);
+const kfmt=n=>Math.abs(n)>=10000?(n/1000).toFixed(0)+"k":Math.abs(n)>=1000?(n/1000).toFixed(1)+"k":String(Math.round(n*10)/10);
+function shade(h,p){const n=parseInt(h.slice(1),16),f=v=>Math.max(0,Math.min(255,Math.round(p<0?v*(1+p):v+(255-v)*p)));return "#"+[n>>16&255,n>>8&255,n&255].map(v=>f(v).toString(16).padStart(2,"0")).join("")}
+function geomBars(items,cols,W,H,legend){const pr=[],L=34,B=22,T=legend?32:18,R=8,pw=W-L-R,ph=H-T-B,ns=cols.length;
+  let mx=Math.max(1,...items.flatMap(i=>i.v.map(v=>Math.abs(v))));if(mx<=9)mx=Math.max(3,Math.ceil(mx/3)*3);const gw=pw/items.length,bw=Math.min(30,gw*.7/ns),dx=Math.min(6,bw*.28),dy=dx*.7;
+  for(let g=0;g<=3;g++){const y=T+ph-ph*g/3;pr.push({k:"l",x1:L,y1:y,x2:W-R,y2:y,c:"#c9cfc8"});pr.push({k:"t",x:L-4,y:y+3,s:7.5,t:kfmt(mx*g/3),a:"e",c:"#777777"})}
+  items.forEach((it,gi)=>{const cx=L+gw*gi+gw/2,x0=cx-bw*ns/2;
+    it.v.forEach((v,si)=>{const h=Math.max(0,Math.abs(v)/mx*ph),x=x0+si*bw,y=T+ph-h,c=cols[si];
+      if(h>0){pr.push({k:"p",p:[[x+bw,y],[x+bw+dx,y-dy],[x+bw+dx,y+h-dy],[x+bw,y+h]],c:shade(c,-.28)});pr.push({k:"p",p:[[x,y],[x+dx,y-dy],[x+bw+dx,y-dy],[x+bw,y]],c:shade(c,.3)});pr.push({k:"r",x,y,w:bw,h,c});
+        pr.push({k:"t",x:x+bw/2,y:y-dy-3,s:7.5,t:kfmt(v),a:"m",c:"#333333"})}});
+    pr.push({k:"t",x:cx,y:H-7,s:8,t:it.l,a:"m",c:"#555555"})});
+  (legend||[]).forEach((t,i)=>{pr.push({k:"r",x:L+i*90,y:4,w:9,h:9,c:cols[i]});pr.push({k:"t",x:L+i*90+13,y:12,s:8,t,a:"s",c:"#444444"})});
+  return {prim:pr,w:W,h:H}}
+function chartSVG(c){return `<svg viewBox="0 0 ${c.w} ${c.h}" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Helvetica,Arial,sans-serif">${c.prim.map(p=>p.k==="r"?`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="${p.c}"/>`:p.k==="p"?`<polygon points="${p.p.map(q=>q.join(",")).join(" ")}" fill="${p.c}"/>`:p.k==="l"?`<line x1="${p.x1}" y1="${p.y1}" x2="${p.x2}" y2="${p.y2}" stroke="${p.c}" stroke-width=".6"/>`:`<text x="${p.x}" y="${p.y}" font-size="${p.s}" text-anchor="${p.a==="m"?"middle":p.a==="e"?"end":"start"}" ${p.c==="#333333"||p.c==="#444444"?`style="fill:#333"`:""}>${esc(p.t)}</text>`).join("")}</svg>`}
+const chartBox=(t,c)=>`<div class="chart"><div class="ct">${esc(t)}</div>${chartSVG(c)}</div>`;
+function analysis(M){
+  const F=fem(),st=k=>F.filter(a=>rs(a.id).st===k).length,inM=d=>(d||"").startsWith(M);
+  const n=F.length,pre=st("preñada"),srv=st("servida"),vac=st("vacía"),par=st("parida");
+  const partos=F.reduce((x,a)=>x+births(a).filter(inM).length,0),serv=S.repro.filter(r=>r.type==="Servicio"&&inM(r.date)).length,conf=S.repro.filter(r=>r.type==="Diagnóstico"&&r.result==="Preñada"&&inM(r.date)).length;
+  const iv=[];F.forEach(a=>{const b=births(a);for(let i=1;i<b.length;i++)iv.push(dd(b[i],b[i-1]))});
+  const ivm=iv.length?iv.reduce((x,y)=>x+y,0)/iv.length/30.4:null,vl=alerts().filter(x=>x.k==="vacia").length;
+  const ser=mLast(M,6),ml=ser.map(m=>milkDays(m+"-01",mEndD(m)).tot),cur=ml[5],prev=ml[4];
+  const t=today(),dMonth=M===t.slice(0,7)?+t.slice(8):+mEndD(M).slice(8);
+  const md=milkDays(M+"-01",mEndD(M)),top=Object.entries(md.per).map(([id,v])=>({a:byId(id),g:v.g})).filter(x=>x.a).sort((x,y)=>y.g-x.g).slice(0,5);
+  const fin=ser.map(m=>{const L=S.fin.filter(f=>f.date.startsWith(m));return [L.filter(f=>f.kind==="ingreso").reduce((x,f)=>x+f.amount,0),L.filter(f=>f.kind==="gasto").reduce((x,f)=>x+f.amount,0)]});
+  const gc={};S.fin.filter(f=>f.kind==="gasto"&&f.date.startsWith(M)).forEach(f=>gc[f.cat]=(gc[f.cat]||0)+f.amount);
+  const gcat=Object.entries(gc).sort((x,y)=>y[1]-x[1]).slice(0,6);
+  return {M,repro:{n,pre,srv,vac,par,partos,serv,conf,ivm,vl,pct:n?Math.round(pre/n*100):0,ch:geomBars([{l:"Preñadas",v:[pre]},{l:"Servidas",v:[srv]},{l:"Vacías",v:[vac]},{l:"Paridas",v:[par]}],["#2f9d62"],515,150)},
+    leche:{cur,prev,avg:cur/Math.max(1,dMonth),delta:prev?Math.round((cur-prev)/prev*100):null,top,ch:geomBars(ser.map((m,i)=>({l:mLbl(m),v:[ml[i]]})),["#2f6fb5"],515,150)},
+    fin:{ing:fin[5][0],gas:fin[5][1],net:fin[5][0]-fin[5][1],gcat,ch:geomBars(ser.map((m,i)=>({l:mLbl(m),v:fin[i]})),["#2f9d62","#c0463a"],515,160,["Ingresos","Gastos"])}}}
+const kpi=(l,v,n,tone)=>`<div class="kpi ${tone?"k-"+tone:""}"><div class="kl">${l}</div><div class="kv">${v}</div>${n?`<div class="kn">${n}</div>`:""}</div>`;
+function fAnalisis(M){M=M||today().slice(0,7);const R=analysis(M),r=R.repro,l=R.leche,f=R.fin;
+  const bars=(rows,tot)=>rows.map(x=>`<div class="cr"><span style="flex:0 0 42%;font-size:14px">${esc(x[0])}</span><span class="cb"><i style="width:${Math.round(x[1]/Math.max(1,tot)*100)}%"></i></span><b style="font-size:14px;min-width:60px">${x[2]}</b></div>`).join("");
+  sheet(`<h1>📈 Análisis</h1><label>Mes de análisis</label><input type="month" id="an_m" value="${M}">
+  <h2>🐄 Reproducción</h2><div class="kg">${kpi("Hembras preñadas",r.pct+"%",r.pre+" de "+r.n+" hembras",r.pct>=50?"g":r.pct>=30?"y":"r")}${kpi("Partos del mes",r.partos,"Servicios: "+r.serv+" · Confirmadas: "+r.conf)}${kpi("Intervalo entre partos",r.ivm?r.ivm.toFixed(1)+" m":"-","Ideal: 12 a 13 meses",r.ivm?(r.ivm<=13.5?"g":r.ivm<=15?"y":"r"):"")}${kpi("Vacías sin preñez",r.vl,"Más de "+(cfg().vac||90)+" días",r.vl?"r":"g")}</div>${chartBox("Estado reproductivo del hato",r.ch)}
+  <h2>🥛 Leche</h2><div class="kg">${kpi("Total del mes",fmtMilk(l.cur),l.delta==null?"":(l.delta>=0?"▲ ":"▼ ")+Math.abs(l.delta)+"% vs mes anterior",l.delta==null?"":l.delta>=0?"g":"r")}${kpi("Promedio diario",fmtMilk(l.avg),"Galones por día")}</div>${chartBox("Galones por mes (últimos 6)",l.ch)}${l.top.length?`<div class="card" style="padding:6px 14px"><div class="b" style="font:600 14px var(--sf);padding:4px 0">Mejores vacas del mes</div>${bars(l.top.map(x=>[nm(x.a),x.g,fmtMilk(x.g)]),l.top[0].g)}</div>`:""}
+  <h2>💰 Finanzas</h2><div class="kg">${kpi("Ingresos",money(f.ing),mLong(M),"g")}${kpi("Gastos",money(f.gas),mLong(M),"r")}</div>${kpi(f.net>=0?"Utilidad":"Pérdida",money(f.net),"",f.net>=0?"g":"r")}<div style="height:10px"></div>${chartBox("Ingresos vs gastos (últimos 6 meses)",f.ch)}${f.gcat.length?`<div class="card" style="padding:6px 14px"><div class="b" style="font:600 14px var(--sf);padding:4px 0">Gastos por cuenta</div>${bars(f.gcat.map(x=>[x[0],x[1],money(x[1])]),f.gcat[0][1])}</div>`:""}
+  <br><button id="an_pdf">📄 Informe mensual en PDF</button><br><br><button class="s" id="cx">Cerrar</button>`);
+  $("an_m").onchange=()=>{if($("an_m").value)fAnalisis($("an_m").value)};$("an_pdf").onclick=()=>pdfInforme(M);$("cx").onclick=close}
+function pdfInforme(M){const R=analysis(M),r=R.repro,l=R.leche,f=R.fin,A=act(),c={};A.forEach(a=>c[a.cat]=(c[a.cat]||0)+1);const X=[40,330],row=(a,b)=>({c:[a,String(b)],x:X,sz:10});
+  const it=[...pdfHead("Informe mensual - "+mLong(M)),...pdfSec("Resumen del hato"),row("Total de animales",A.length),...CATS.filter(k=>c[k]).map(k=>row("   "+k,c[k])),
+  ...pdfSec("Reproducción"),row("Hembras en el hato",r.n),row("Preñadas",r.pre+" ("+r.pct+"%)"),row("Servidas sin diagnóstico",r.srv),row("Vacías",r.vac),row("Paridas",r.par),row("Partos del mes",r.partos),row("Servicios del mes",r.serv),row("Preñeces confirmadas en el mes",r.conf),row("Intervalo promedio entre partos",r.ivm?r.ivm.toFixed(1)+" meses":"sin datos"),row("Vacías largas sin preñez",r.vl),{chart:r.ch,keep:1},
+  ...pdfSec("Producción de leche"),row("Total del mes",fmtMilk(l.cur)),row("Promedio diario",fmtMilk(l.avg)),row("Mes anterior",fmtMilk(l.prev)),...(l.top.length?[{c:["Mejores vacas del mes"],b:1,sz:9},...l.top.map(x=>row("   "+nm(x.a),fmtMilk(x.g)))]:[]),{chart:l.ch,keep:1},
+  ...pdfSec("Finanzas del mes"),row("Ingresos",money(f.ing)),row("Gastos",money(f.gas)),row(f.net>=0?"Utilidad":"Pérdida",money(f.net)),...f.gcat.map(x=>row("   Gasto: "+x[0],money(x[1]))),{chart:f.ch,keep:1},
+  ...pdfSec("Plan de vacunas y alertas"),...(alerts().length?alerts().slice(0,25).map(x=>({c:[(x.t||"").replace(/[^\x20-\x7e\xa0-\xff]/g,"")+" ",x.k==="vacia"?"Vacía":fmt(x.d)],x:[40,400],sz:9})):[{c:["Sin alertas pendientes"],sz:9}])];
+  sharePDF("informe-"+M+".pdf",it)}
 function pdfList(ids){const A=[...act()].filter(a=>!ids||ids.has(a.id)).sort(byAge),x=[40,100,180,252,285,340,420,487];
   sharePDF("listado-animales-"+today()+".pdf",[...pdfHead("Listado de animales"+(ids?" ("+A.length+" seleccionados)":"")),{c:["Ordenado de mayor a menor edad"],sz:8},{c:["Arete","Nombre","Categoría","Sexo","Edad","Dueño","Madre","Padre"],x,b:1,sz:8,line:1},...A.map(a=>({c:[a.tag,a.name,a.cat,sexo(a),edadC(a.born),a.owner,pname(a.mom),pname(a.dad)],x,sz:8})),{c:["Total de animales: "+A.length],b:1,sz:10}])}
 function cvItems(a){const rp=S.repro.filter(e=>e.aid===a.id).sort((p,q)=>p.date.localeCompare(q.date)),ev=S.events.filter(e=>e.aid===a.id||e.aid==="ALL").sort((p,q)=>p.date.localeCompare(q.date)),x=[40,110,250];
@@ -484,7 +596,8 @@ function sheet(h){$("shc").innerHTML=h;$("sh").style.display="flex"}
 function close(){$("sh").style.display="none"}
 const P=()=>S.meta.prof||{};
 const pinfo=(p,ph)=>[p.owner,p.loc,ph&&p.phone].filter(Boolean).join(" · ");
-function hdr(){const p=P();return `<div class="row" data-prof style="justify-content:flex-start;gap:12px;margin:4px 0 12px">${p.logo?`<img class="ph" style="width:56px;height:56px" src="${p.logo}">`:""}<div><h1 style="margin:0">${esc(p.name)||"Rebaño"}</h1><div class="mu">${esc(pinfo(p))||"Tocá acá para configurar el perfil"}</div></div></div>`}
+function hdr(){const p=P(),F=fem(),pre=F.filter(x=>rs(x.id).st==="preñada").length,NA=alerts().length;
+  return `<div class="hero" data-prof><div class="hl">${p.logo?`<img class="ph" src="${p.logo}">`:'<div class="lg0">🐄</div>'}<div style="min-width:0"><div class="eb">Ganadería</div><h1>${esc(p.name)||"Mi Tambo"}</h1><div class="sb">${esc(pinfo(p))||"Tocá acá para configurar el perfil"}</div></div></div><div class="ks"><div class="k"><b>${act().length}</b><span>Animales</span></div><div class="k"><b>${pre}</b><span>Preñadas</span></div><div class="k"><b>${Math.round(milkToday()*10)/10}</b><span>Gal hoy</span></div><div class="k ${NA?"w":""}"><b>${NA}</b><span>Alertas</span></div></div></div>`}
 const profHtml=()=>{const p=P();return (p.name||p.logo)?`<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">${p.logo?`<img src="${p.logo}" style="width:64px;height:64px;border-radius:50%;object-fit:cover">`:""}<div><div style="font-size:20px;font-weight:700">${esc(p.name)}</div><div style="color:#666;font-size:13px">${esc(pinfo(p,1))}</div></div></div>`:""};
 const profT=()=>{const p=P(),l=[p.name,pinfo(p,1)].filter(Boolean).join("\n");return l?l+"\n":""};
 function fProf(){const p=P();let lg=p.logo||"";
@@ -656,6 +769,7 @@ document.addEventListener("click",e=>{
   {const L=e.target.closest("a");if(L&&!L.dataset.t)return}
   const t=e.target.closest("[data-t]");if(t){e.preventDefault();tab=t.dataset.t;if(tab!=="animales"){selMode=false;SEL.clear()}render();return}
   const a=e.target.closest("[data-a]");if(a){detail(byId(a.dataset.a));return}
+  if(e.target.closest("[data-an]")){fAnalisis();return}
   if(e.target.closest("[data-milk]")){fLeche(today());return}
   if(e.target.closest("[data-more]")){aLim+=50;render();return}
   if(e.target.closest("[data-al]")){fAlertas();return}
