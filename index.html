@@ -767,15 +767,25 @@ function fSan(E){E=E||{};if(!act().length)return alert("Primero cargá al menos 
   <label>Tipo</label><select id="f_t">${opts(SAN,E.type)}</select>
   <label>Fecha de aplicación</label><input type="date" id="f_d" value="${E.date||today()}">
   <label>Vacuna / medicamento</label>${lsel("f_p",E.product||"",vacPlan().map(p=>p.name),"prodList","— Sin producto —")}
-  <label>¿Se repite?</label><select id="f_rep"><option value="">No se repite</option><option value="6" ${rep0==6?"selected":""}>Cada 6 meses</option><option value="12" ${rep0==12?"selected":""}>Anual (cada 12 meses)</option></select>
+  <label>¿Se repite?</label><select id="f_rep"></select>
   <label>Próxima aplicación (genera alerta con anticipación)</label><input type="date" id="f_nx" value="${E.next||""}">
   <label>Días de retiro (leche/carne)</label><input type="number" inputmode="numeric" id="f_r" placeholder="0" value="${E.days||""}">
   <label>Notas</label><textarea id="f_n" rows="2">${esc(E.note)}</textarea>
   <button id="ok">Guardar</button><br><br>${ed?'<button class="d" id="del">Eliminar</button><br><br>':""}<button class="s" id="cx">Cancelar</button>`);
   lnew("f_p",E.product||"","prodList","Nombre de la vacuna o medicamento");
-  const auto=()=>{const m=+$("f_rep").value;if(m&&$("f_d").value)$("f_nx").value=addM($("f_d").value,m)};
-  $("f_rep").onchange=auto;$("f_d").onchange=auto;
-  $("f_p").addEventListener("change",()=>{const p=vacPlan().find(x=>x.name===$("f_p").value);if(p){$("f_rep").value=p.months===6||p.months===12?String(p.months):"";auto();if(p.months===12||p.months===6){}else if(p.months&&$("f_d").value)$("f_nx").value=addM($("f_d").value,p.months)}});
+  const rv=v=>String(v).startsWith("d")?+String(v).slice(1)*1:+v*30,rlab=v=>{v=String(v);if(v[0]==="d"){const n=+v.slice(1);return "Cada "+n+(n===1?" día":" días")}const n=+v;return n===12?"Anual (cada 12 meses)":n===24?"Cada 2 años":"Cada "+n+(n===1?" mes":" meses")},
+    rl=sel=>{const L=new Set(["6","12",...(S.meta.repList||[]).map(String)]);if(sel)L.add(String(sel));return [...L].sort((a,b)=>rv(a)-rv(b))},
+    drawRep=sel=>{$("f_rep").innerHTML='<option value="">No se repite</option>'+rl(sel).map(v=>`<option value="${v}">${rlab(v)}</option>`).join("")+'<option value="__new">➕ Agregar otro…</option>';$("f_rep").value=sel?String(sel):"";$("f_rep").dataset.prev=$("f_rep").value},
+    auto=()=>{const v=$("f_rep").value;if(v&&v!=="__new"&&$("f_d").value)$("f_nx").value=v[0]==="d"?addD($("f_d").value,+v.slice(1)):addM($("f_d").value,+v)};
+  drawRep(rep0||"");
+  $("f_rep").onchange=e=>{const el=e.target;if(el.value!=="__new"){el.dataset.prev=el.value;auto();return}
+    const t=(prompt("¿Cada cuánto se repite?\n\nEscribí un número = meses (ej: 3)\nO con la palabra días (ej: 21 días)")||"").trim().toLowerCase();
+    if(!t){el.value=el.dataset.prev;return}
+    const m=t.match(/^(\d{1,3})\s*(d|dia|dias|día|días)?$/);if(!m||!+m[1]){alert("No entendí. Escribí por ejemplo 3 (meses) o 21 días");el.value=el.dataset.prev;return}
+    const v=m[2]?"d"+(+m[1]):String(+m[1]);if(!rl().includes(v)){S.meta.repList=S.meta.repList||[];S.meta.repList.push(v);save()}
+    drawRep(v);auto()};
+  $("f_d").onchange=auto;
+  $("f_p").addEventListener("change",()=>{const p=vacPlan().find(x=>x.name===$("f_p").value);if(p){drawRep(p.months||"");auto();if(p.months===12||p.months===6){}else if(p.months&&$("f_d").value)$("f_nx").value=addM($("f_d").value,p.months)}});
   if(!ed&&rep0)auto();
   $("ok").onclick=()=>{const o={aid:$("f_a").value,type:$("f_t").value,date:$("f_d").value||today(),product:$("f_p").value.trim(),days:+$("f_r").value||0,next:$("f_nx").value,note:$("f_n").value.trim()};
     if(ed)Object.assign(E,o);else S.events.push({id:uid(),...o});save();close();render()};
