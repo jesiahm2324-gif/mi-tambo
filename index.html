@@ -803,12 +803,45 @@ function fMov(){
     else{if(!ex)return alert("No encontré un animal activo con esa caravana");ex.status="baja";ex.baja={type,date:d}}
     S.moves.push({id:uid(),type,tag,date:d,note:$("f_n").value.trim()});const mt=parseFloat($("f_m").value.replace(",","."));if(mt>0&&(type==="Venta"||type==="Compra"))S.fin.push({id:uid(),kind:type==="Venta"?"ingreso":"gasto",cat:type==="Venta"?"Venta de animales":"Compra de animales",amount:mt,date:d,note:"Arete "+tag});save();close();render()};
   $("cx").onclick=close}
+
+/* ===== Lactancias y partos por vaca ===== */
+function lactData(a){
+  const B=births(a),rp=S.repro.filter(r=>r.aid===a.id&&r.type==="Parto"),kids=S.animals.filter(x=>isMom(x,a)&&x.born),t=today(),rows=[];
+  const inf=d=>{let sx="",tp="";const r=rp.find(r=>Math.abs(dd(r.date,d))<=5);if(r){const p=(r.detail||"").split(" · ");tp=p[0]||"";const k=((p[1]||"").split(" ")[0]);if(k==="Hembra"||k==="Macho"||k==="Mortinato")sx=k}
+    if(!sx){const k=kids.find(x=>Math.abs(dd(x.born,d))<=5);if(k)sx=isM(k.cat)?"Macho":"Hembra"}return {sx:sx||"Sin dato",tp}};
+  B.forEach((d,i)=>{const nx=B[i+1],to=nx?addD(nx,-1):t,m=milkDays(d,to).per[a.id]||{g:0,n:0},i2=inf(d);
+    rows.push({n:i+1,from:d,to,open:!nx,dias:Math.max(1,dd(to,d)+1),dreg:m.n,l:Math.round(m.g*10)/10,avg:m.n?Math.round(m.g/m.n*10)/10:0,sx:i2.sx,tp:i2.tp})});
+  let pre=null;if(B[0]){const m=milkDays("2000-01-01",addD(B[0],-1)).per[a.id];if(m&&m.g>0)pre={dreg:m.n,l:Math.round(m.g*10)/10,avg:Math.round(m.g/m.n*10)/10}}
+  const c=k=>rows.filter(r=>r.sx===k).length,ok=rows.filter(r=>r.dreg>0);
+  let msg="";if(ok.length){const b=ok.reduce((x,y)=>y.avg>x.avg?y:x);msg="Mejor lactación: la N.º "+b.n+" con "+b.avg+" L por día de ordeño."; if(ok.length>1){const u=ok[ok.length-1],p=ok[ok.length-2];if(p.avg>0){const d=Math.round((u.avg-p.avg)/p.avg*100);msg+=" La N.º "+u.n+(u.open?" (en curso)":"")+" va "+(d>=0?d+"% por encima":(-d)+"% por debajo")+" de la N.º "+p.n+"."}}}
+  return {rows,pre,n:rows.length,h:c("Hembra"),m:c("Macho"),mo:c("Mortinato"),sd:c("Sin dato"),msg,ok}}
+function lactChart(D,key,tit){return D.ok.length?geomBars(D.ok.map(r=>({l:"Lact. "+r.n,v:[r[key]]})),["#2f9d62"],515,150):null}
+function fLact(a){const D=lactData(a);
+  const c1=lactChart(D,"avg"),c2=lactChart(D,"l");
+  sheet(`<h1>🥛 Lactancias y partos</h1><p class="mu">${nm(a)}</p>
+  <div class="kg">${kpi("Partos registrados",D.n,"Hembras "+D.h+" · Machos "+D.m+(D.mo?" · Mortinatos "+D.mo:"")+(D.sd?" · Sin dato "+D.sd:""))}${kpi("Lactancias con leche",D.ok.length,D.ok.length?"con litros registrados":"sin litros por vaca")}</div>
+  ${D.n?`<h2>Lactancia por lactancia</h2><table class="rt"><tr><td class="b">Lact.</td><td class="b">Parto</td><td class="b">Cría</td><td class="b">Días</td><td class="b">Litros</td><td class="b">L/día</td></tr>${D.rows.map(r=>`<tr><td>${r.n}${r.open?" ⏳":""}</td><td>${fmt(r.from)}</td><td>${r.sx==="Sin dato"?"—":r.sx}</td><td>${r.dias}</td><td>${r.dreg?r.l:"—"}</td><td>${r.dreg?r.avg:"—"}</td></tr>`).join("")}${D.pre?`<tr><td colspan="3">Antes del 1.er parto registrado</td><td>${D.pre.dreg}</td><td>${D.pre.l}</td><td>${D.pre.avg}</td></tr>`:""}</table><p class="mu">⏳ = lactancia en curso. "Días" cuenta desde el parto hasta el siguiente parto (o hasta hoy). "L/día" es el promedio de los días que tienen litros registrados.</p>`:'<p class="mu">Esta vaca no tiene partos registrados. Registrá su parto en Preñez y partos para ver sus lactancias.</p>'}
+  ${D.msg?`<div class="card"><div class="b">📊 ${esc(D.msg)}</div></div>`:(D.n?'<p class="mu">Todavía no hay litros registrados vaca por vaca en estas lactancias. Registrá la leche por vaca para compararlas.</p>':"")}
+  ${c1?chartBox("Promedio de litros por día en ordeño",c1)+chartBox("Litros totales por lactancia",c2):""}
+  <button id="lpdf">📄 Informe de lactancias (PDF)</button><br><br><button class="s" id="lxls">📊 Descargar en Excel</button><br><br><button class="s" id="cx">Volver</button>`);
+  $("lpdf").onclick=()=>pdfLact(a);$("lxls").onclick=()=>xlsxLact(a);$("cx").onclick=()=>detail(a)}
+function pdfLact(a){const D=lactData(a),x=[40,85,175,255,330,375,435],it=[...pdfHead("Lactancias y partos: "+raw(a)),{c:["Partos registrados: "+D.n+"   ·   Hembras: "+D.h+"   ·   Machos: "+D.m+(D.mo?"   ·   Mortinatos: "+D.mo:"")+(D.sd?"   ·   Sin dato: "+D.sd:"")],b:1,sz:10}];
+  if(!D.n)it.push({c:["Sin partos registrados."],sz:9});
+  else{it.push(...pdfSec("Lactancia por lactancia"),{c:["Lact.","Parto","Cría","Tipo","Días","Litros","L/día"],x,b:1,sz:9,line:1},...D.rows.map(r=>({c:[r.n+(r.open?"*":""),fmt(r.from),r.sx==="Sin dato"?"-":r.sx,r.tp||"-",String(r.dias),r.dreg?String(r.l):"-",r.dreg?String(r.avg):"-"],x,sz:9})));
+    if(D.pre)it.push({c:["Antes del 1.er parto: "+D.pre.dreg+" dias con litros, "+D.pre.l+" L, "+D.pre.avg+" L/dia."],sz:8});
+    it.push({c:["* = lactancia en curso. Días = desde el parto hasta el siguiente parto (o hasta hoy)."],sz:8},{c:["L/día = promedio de los días que tienen litros registrados."],sz:8});
+    if(D.msg)D.msg.split(". ").forEach((t,i)=>it.push({c:[t.replace(/\.$/,"")+"."],b:1,sz:10,line:i?0:1}));
+    const c1=lactChart(D,"avg"),c2=lactChart(D,"l");if(c1)it.push(...pdfSec("Promedio de litros por día en ordeño"),{chart:c1,keep:1},...pdfSec("Litros totales por lactancia"),{chart:c2,keep:1})}
+  sharePDF("lactancias-"+a.tag+".pdf",it)}
+function xlsxLact(a){const D=lactData(a),H=["Lactancia","Fecha de parto","Fin / corte","En curso","Sexo de la cría","Tipo de parto","Días","Días con litros","Litros totales","Litros por día"],
+  R=D.rows.map(r=>[r.n,{d:r.from},{d:r.to},r.open?"Sí":"No",r.sx,r.tp,r.dias,r.dreg,r.l,r.avg]);
+  shareFile(new File([makeXlsx("Lactancias",H,R,[11,16,14,10,16,14,8,15,14,14])],"lactancias-"+a.tag+".xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}))}
 function detail(a){
   const ev=S.events.filter(e=>e.aid===a.id||e.aid==="ALL").sort((x,y)=>y.date.localeCompare(x.date)),rp=S.repro.filter(e=>e.aid===a.id).sort((x,y)=>y.date.localeCompare(x.date)),st=rs(a.id);
   sheet(`${a.photo?`<img src="${a.photo}" style="width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin-bottom:10px">`:""}<h1>${nm(a)}</h1><p class="mu">${a.cat}${a.born?" · Nació "+fmt(a.born):""}${a.breed?" · "+esc(a.breed):""}${a.owner?" · Dueño: "+esc(a.owner):""}</p>
   ${hv(a)}${isM(a.cat)?"":`<h2>Reproducción · ${st.st}${st.due?" · parto "+fmt(st.due):""}</h2>${rp.map(e=>`<div class="card"><div class="row"><span class="b">${e.type}${e.result?" · "+e.result:""}</span><span class="mu">${fmt(e.date)}</span></div><div class="mu">${esc(e.detail)}${e.note?" · "+esc(e.note):""}</div></div>`).join("")||'<p class="mu">Sin eventos.</p>'}`}<h2>Historial sanitario</h2>${ev.map(e=>`<div class="card"><div class="row"><span class="b">${e.type}</span><span class="mu">${fmt(e.date)}</span></div><div class="mu">${esc(e.product)}${e.note?" · "+esc(e.note):""}</div></div>`).join("")||'<p class="mu">Sin registros.</p>'}
-  ${st.st==="preñada"?'<button class="s" id="pg">📅 Fecha de preñez / parto probable</button><br><br>':""}${st.st==="servida"?'<button class="s" id="cfm">✅ Confirmar preñez</button><br><br>':""}<button id="pdfv">📄 Hoja de vida (PDF)</button><br><br><button id="ed">Editar</button><br><br><button class="d" id="del">Eliminar animal</button><br><br><button class="s" id="cx">Cerrar</button>`);
-  $("ed").onclick=()=>fAnimal(a);$("pdfv").onclick=()=>pdfCV(a);if(st.st==="preñada")$("pg").onclick=()=>fPren(a.id);if(st.st==="servida")$("cfm").onclick=()=>fConf(a.id);
+  ${st.st==="preñada"?'<button class="s" id="pg">📅 Fecha de preñez / parto probable</button><br><br>':""}${st.st==="servida"?'<button class="s" id="cfm">✅ Confirmar preñez</button><br><br>':""}${isM(a.cat)?"":'<button class="s" id="lac">🥛 Lactancias y partos</button><br><br>'}<button id="pdfv">📄 Hoja de vida (PDF)</button><br><br><button id="ed">Editar</button><br><br><button class="d" id="del">Eliminar animal</button><br><br><button class="s" id="cx">Cerrar</button>`);
+  $("ed").onclick=()=>fAnimal(a);$("pdfv").onclick=()=>pdfCV(a);if(!isM(a.cat))$("lac").onclick=()=>fLact(a);if(st.st==="preñada")$("pg").onclick=()=>fPren(a.id);if(st.st==="servida")$("cfm").onclick=()=>fConf(a.id);
   $("del").onclick=()=>{if(confirm("¿Eliminar este animal y su historial?")){S.animals=S.animals.filter(x=>x!==a);S.events=S.events.filter(e=>e.aid!==a.id);S.repro=S.repro.filter(e=>e.aid!==a.id);save();close();render()}};
   $("cx").onclick=close}
 document.addEventListener("click",e=>{
