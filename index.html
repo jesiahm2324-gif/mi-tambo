@@ -108,10 +108,21 @@ nav a b{font-size:21px;margin-bottom:1px}
 .kpi.k-g{border-top-color:#2f9d62}.kpi.k-y{border-top-color:#d0a94f}.kpi.k-r{border-top-color:var(--wa)}
 .chart{background:var(--card);border:1px solid var(--bd);border-bottom:3px solid color-mix(in srgb,var(--bd) 60%,var(--pr) 40%);border-radius:16px;padding:10px 6px 4px;margin-bottom:10px;box-shadow:var(--sh)}
 .chart .ct{font:600 14px/1.2 var(--sf);padding:0 8px 4px}.chart svg{width:100%;height:auto;display:block}.chart text{fill:var(--mu)}
+
+#act{position:fixed;inset:0;z-index:99;display:none;overflow:auto;background:radial-gradient(500px 300px at 100% 0,#d0a94f33,transparent),linear-gradient(160deg,var(--hero1),var(--hero2) 70%,var(--hero3));color:#fff;padding:calc(30px + env(safe-area-inset-top,0px)) 20px 40px}
+#act .in{max-width:460px;margin:auto}
+#act h1{color:#fff;font-size:30px;margin:10px 0 4px;padding:0}#act h1::before{display:none}
+#act p{color:#ffffffd0;margin:6px 0 14px}
+#act .id{font:700 30px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;background:#00000030;border:1px dashed #ffffff66;border-radius:14px;padding:16px 10px;text-align:center;margin:8px 0 12px;user-select:all;-webkit-user-select:all}
+#act button{box-shadow:0 3px 0 #0006}#act button.g{background:#25a85a;color:#fff}#act button.s{background:#ffffff1f;color:#fff;border-color:#ffffff55}
+#act textarea{background:#ffffff;color:#14231b;font:13px/1.3 ui-monospace,Menlo,monospace;min-height:96px}
+#act .er{background:#fbeceb;color:#b3382c;border-radius:12px;padding:10px 12px;margin:0 0 10px;font-weight:600;display:none}
+#act .st{font:700 12px/1 var(--sf);letter-spacing:.16em;color:#e9d08a;text-transform:uppercase}
 </style>
 </head>
 <body>
 <main id="app"></main>
+<div id="act"></div>
 <button class="gear" id="gear">⚙️</button><datalist id="tags"></datalist><datalist id="pots"></datalist>
 <button class="fab" id="fab">+ Nuevo</button>
 <nav id="nav"></nav>
@@ -175,7 +186,7 @@ function vRebano(){
   <div class="card tile ${old?"warn":""}" data-rep><div class="ti" style="--c1:#3b8f6a;--c2:#1f5a43;--c3:#123226">📊</div><div class="tt">Reportes y respaldo</div><div class="ts">${lb?"Respaldo: "+fmt(lb):"Sin respaldo aún"}</div></div>
   <div class="card tile" data-an><div class="ti" style="--c1:#e0b955;--c2:#a8832f;--c3:#6b5218">📈</div><div class="tt">Análisis e indicadores</div><div class="ts">Gráficos e informe</div></div>
   <div class="card tile" data-milk><div class="ti" style="--c1:#6aa9e8;--c2:#2f6fb5;--c3:#1b4478">🥛</div><div class="tt">Producción de leche</div><div class="ts">Hoy ${fmtMilk(milkToday())}</div></div>
-  <div class="card tile" data-tools><div class="ti" style="--c1:#e58f5b;--c2:#b4531f;--c3:#7a3611">🛠️</div><div class="tt">Herramientas</div><div class="ts">${S.tools.length} registradas</div></div></div>${alCard(AL)}<div class="card" style="padding:6px 15px"><div class="row" style="padding:8px 0;border-bottom:1px solid var(--bd)"><span class="b" style="font:600 17px var(--sf)">Total de animales</span><span class="big" style="font-size:30px;font-variant-numeric:tabular-nums">${A.length}</span></div>${(mx=>CATS.map(k=>`<div class="cr"><span>${k}</span><span class="cb"><i style="width:${Math.round((c[k]||0)/mx*100)}%"></i></span><b>${c[k]||0}</b></div>`).join(""))(Math.max(1,...CATS.map(k=>c[k]||0)))}</div>
+  <div class="card tile" data-tools><div class="ti" style="--c1:#e58f5b;--c2:#b4531f;--c3:#7a3611">🛠️</div><div class="tt">Herramientas</div><div class="ts">${S.tools.length} registradas</div></div></div>${licWarn()}${alCard(AL)}<div class="card" style="padding:6px 15px"><div class="row" style="padding:8px 0;border-bottom:1px solid var(--bd)"><span class="b" style="font:600 17px var(--sf)">Total de animales</span><span class="big" style="font-size:30px;font-variant-numeric:tabular-nums">${A.length}</span></div>${(mx=>CATS.map(k=>`<div class="cr"><span>${k}</span><span class="cb"><i style="width:${Math.round((c[k]||0)/mx*100)}%"></i></span><b>${c[k]||0}</b></div>`).join(""))(Math.max(1,...CATS.map(k=>c[k]||0)))}</div>
   ${plg2("inv","📦 Inventario del mes",`<div class="card"><table class="rt">${inv.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table></div>`,"Inicial "+inv[0][1]+" · Final "+inv[5][1])}
   ${plg2("mov","📝 Últimos movimientos ("+S.moves.length+")",m.map(x=>`<div class="card"><div class="row"><span class="b">${x.type}</span><span class="mu">${fmt(x.date)}</span></div><div class="mu">#${esc(x.tag)}${x.note?" · "+esc(x.note):""}</div></div>`).join("")||'<p class="mu">Sin movimientos todavía.</p>',m[0]?m[0].type+" · #"+esc(m[0].tag)+" · "+fmt(m[0].date):"Sin movimientos todavía")}`;
 }
@@ -501,6 +512,42 @@ function pdfInforme(M){const R=analysis(M),r=R.repro,l=R.leche,f=R.fin,A=act(),c
   ...pdfSec("Finanzas del mes"),row("Ingresos",money(f.ing)),row("Gastos",money(f.gas)),row(f.net>=0?"Utilidad":"Pérdida",money(f.net)),...f.gcat.map(x=>row("   Gasto: "+x[0],money(x[1]))),{chart:f.ch,keep:1},
   ...pdfSec("Plan de vacunas y alertas"),...(alerts().length?alerts().slice(0,25).map(x=>({c:[(x.t||"").replace(/[^\x20-\x7e\xa0-\xff]/g,"")+" ",x.k==="vacia"?"Vacía":fmt(x.d)],x:[40,400],sz:9})):[{c:["Sin alertas pendientes"],sz:9}])];
   sharePDF("informe-"+M+".pdf",it)}
+
+/* ===== Licencia / activación ===== */
+const PUBK={"kty": "EC", "crv": "P-256", "x": "5KgEFPis3DHEpfHboTJSAIN9N7BgrAF53p3MncLovqU", "y": "DHbX3Zo7Q5j_0lfRXakjDEzRz40JBgjwXMCsyrLPZWo"};
+const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){return null}};
+const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const unb64u=t=>{t=t.replace(/-/g,"+").replace(/_/g,"/");while(t.length%4)t+="=";const b=atob(t),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u};
+function devId(){let d=LS("mt_dev");if(!d||!/^[A-Z0-9]{8}$/.test(d)){const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789",r=crypto.getRandomValues(new Uint8Array(8));d=[...r].map(x=>A[x%A.length]).join("");LS("mt_dev",d)}return d}
+const devFmt=d=>d.slice(0,4)+"-"+d.slice(4);
+const nowD=()=>{const t=today(),seen=LS("mt_seen")||"";if(seen>t)return seen;LS("mt_seen",t);return t};
+let LIC=null;
+async function licCheck(code){
+  try{code=String(code||"").replace(/\s+/g,"");const [p,sg]=code.split(".");if(!p||!sg)return{st:"bad"};
+    const key=await crypto.subtle.importKey("jwk",PUBK,{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
+    if(!await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},key,unb64u(sg),new TextEncoder().encode(p)))return{st:"bad"};
+    const d=JSON.parse(new TextDecoder().decode(unb64u(p)));
+    if(d.d!==devId())return{st:"dev",name:d.n};
+    const t=nowD();if(d.e&&t>d.e)return{st:"exp",name:d.n,exp:d.e};
+    return{st:"ok",name:d.n,exp:d.e||"",days:d.e?dd(d.e,t):null}}
+  catch(e){return{st:"bad"}}}
+async function licInit(){const c=LS("mt_lic");LIC=c?await licCheck(c):{st:"none"};return LIC.st==="ok"}
+function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
+  const msg=opt?"Pegá el código nuevo que te enviaron para renovar tu acceso.":L.st==="exp"?"Tu acceso venció el <b>"+fmt(L.exp)+"</b>. Pedí la renovación enviando tu ID.":"Para usar la app necesitás un código de activación. Enviá tu ID a quien te dio la app y pegá aquí el código que te devuelva.";
+  a.innerHTML=`<div class="in"><div class="st">Ganadería</div><h1>🐄 Mi Tambo</h1><p>${msg}</p><label style="color:#ffffffb0">Tu ID de este teléfono</label><div class="id">${id}</div>
+  <button class="g" id="act_w">📲 Enviar mi ID por WhatsApp</button><div style="height:8px"></div><button class="s" id="act_c">Copiar mi ID</button>
+  <h2 style="color:#fff;border-color:#e9d08a;margin-top:26px">Código de activación</h2><div class="er" id="act_e"></div><textarea id="act_t" placeholder="Pegá aquí el código" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea><button id="act_ok" style="background:#d9b45a;color:#1a1405;box-shadow:0 3px 0 #7b5f1f">Activar</button>${opt?'<div style="height:8px"></div><button class="s" id="act_x">Cancelar</button>':""}
+  <p style="font-size:12.5px;margin-top:18px">Importante: abrí la app desde el ícono instalado en tu pantalla de inicio antes de enviar tu ID. El código solo funciona en este teléfono.</p></div>`;
+  a.style.display="block";
+  $("act_w").onclick=()=>{location.href="https://wa.me/?text="+encodeURIComponent("Hola, solicito el código de activación de Mi Tambo. Mi ID es: "+id)};
+  $("act_c").onclick=async()=>{try{await navigator.clipboard.writeText(id);$("act_c").textContent="✅ ID copiado"}catch(e){alert("Tu ID es: "+id)}};
+  if($("act_x"))$("act_x").onclick=()=>{a.style.display="none"};
+  $("act_ok").onclick=async()=>{const v=$("act_t").value.trim(),r=await licCheck(v),e=$("act_e");
+    if(r.st==="ok"){LS("mt_lic",v.replace(/\s+/g,""));LIC=r;a.style.display="none";render();alert("✅ Acceso activado para "+r.name+(r.exp?"\nVálido hasta el "+fmt(r.exp):"\nSin fecha de vencimiento"));return}
+    e.style.display="block";e.textContent=r.st==="dev"?"Este código fue generado para otro teléfono. Enviá el ID que aparece arriba.":r.st==="exp"?"Este código ya venció ("+fmt(r.exp)+"). Pedí uno nuevo.":"Código inválido. Revisá que lo pegaste completo."}}
+const licCard=()=>{const L=LIC||{};if(L.st!=="ok")return"";return `<div class="card ${L.days!=null&&L.days<=15?"warn":""}"><div class="b">🔑 Acceso activado</div><div class="mu">${esc(L.name)} · ${L.exp?"vence el "+fmt(L.exp)+" ("+L.days+" días)":"sin vencimiento"}</div><div class="mu">ID: ${devFmt(devId())}</div><br><button class="s" id="lic_new">Ingresar código de renovación</button></div>`};
+const licWarn=()=>{const L=LIC||{};return L.st==="ok"&&L.days!=null&&L.days<=15?`<div class="card warn" data-lic><div class="b">⏳ Tu acceso vence ${L.days<=0?"hoy":"en "+L.days+" días"}</div><div class="mu" style="color:inherit;opacity:.9">Fecha: ${fmt(L.exp)}. Pedí tu código de renovación › </div></div>`:""};
+document.addEventListener("visibilitychange",async()=>{if(document.visibilityState==="visible"&&LIC&&LIC.st==="ok"){await licInit();if(LIC.st!=="ok")showAct();else render()}});
 function pdfList(ids){const A=[...act()].filter(a=>!ids||ids.has(a.id)).sort(byAge),x=[40,100,180,252,285,340,420,487];
   sharePDF("listado-animales-"+today()+".pdf",[...pdfHead("Listado de animales"+(ids?" ("+A.length+" seleccionados)":"")),{c:["Ordenado de mayor a menor edad"],sz:8},{c:["Arete","Nombre","Categoría","Sexo","Edad","Dueño","Madre","Padre"],x,b:1,sz:8,line:1},...A.map(a=>({c:[a.tag,a.name,a.cat,sexo(a),edadC(a.born),a.owner,pname(a.mom),pname(a.dad)],x,sz:8})),{c:["Total de animales: "+A.length],b:1,sz:10}])}
 function cvItems(a){const rp=S.repro.filter(e=>e.aid===a.id).sort((p,q)=>p.date.localeCompare(q.date)),ev=S.events.filter(e=>e.aid===a.id||e.aid==="ALL").sort((p,q)=>p.date.localeCompare(q.date)),x=[40,110,250];
@@ -583,9 +630,9 @@ function pdfLecheSemana(f,t){if(!f||!t||t<f)return alert("Revisá las fechas");c
   sharePDF("produccion-por-semana-"+today()+".pdf",[...pdfHead("Producción de leche por semana"),{c:["Período: "+fmt(f)+" al "+fmt(t)+" · Unidad: galones"],sz:9},{c:["Semana (lun a dom)","Por vaca","Global","Total gal","Prom. gal/día","Días"],x,b:1,sz:9,line:1},...(rows.length?rows:[{c:["Sin registros en el período"],sz:9}]),{c:["TOTAL",tc.toFixed(1),tg.toFixed(1),(tc+tg).toFixed(1),tn?((tc+tg)/tn).toFixed(1):"0",String(tn)],x,b:1,sz:10,line:1}])}
 const CUR=[["C$","Córdoba (C$)"],["$","Peso ($)"],["US$","Dólar (US$)"],["Q","Quetzal (Q)"],["L","Lempira (L)"],["S/","Sol (S/)"],["Bs","Boliviano (Bs)"],["₲","Guaraní (₲)"],["€","Euro (€)"]];
 function fSet(){const pp=S.meta.people||[],lst=k=>pp.filter(p=>p.kind===k).map(p=>`<div class="card" data-pe="${p.id}"><div class="row" style="justify-content:flex-start;gap:10px">${p.photo?`<img class="ph" src="${p.photo}">`:""}<div style="min-width:0"><div class="b">${esc(p.name)}</div><div class="mu">${esc(p.role)}${p.cedula?" · Cédula "+esc(p.cedula):""}</div></div></div>${p.phone?`<div class="mu">${esc(p.phone)} · <a href="tel:${esc(p.phone)}" style="color:var(--pr)">Llamar</a> · <a href="https://wa.me/${esc(p.phone.replace(/\D/g,""))}" style="color:var(--pr)">WhatsApp</a></div>`:""}</div>`).join("")||'<p class="mu">Sin registros.</p>';
-  sheet(`<h1>⚙️ Ajustes</h1><h2>Finca</h2><div class="card" data-prof2><span class="b">${esc(P().name)||"Configurar perfil de la finca"}</span> ›</div><h2>Trabajadores</h2>${lst("Trabajador")}<button class="s" id="ap1">+ Agregar trabajador</button><h2>Contactos</h2>${lst("Contacto")}<button class="s" id="ap2">+ Agregar contacto</button><h2>Alertas de partos y vacunas</h2><label>Avisar con anticipación de</label><select id="s_d">${[7,15,30,45,60].map(n=>`<option value="${n}" ${n===AD()?"selected":""}>${n} días</option>`).join("")}</select><label>Vacías: avisar a los … días del último parto</label><select id="s_v">${[60,90,120].map(n=>`<option value="${n}" ${n===(+cfg().vac||90)?"selected":""}>${n} días</option>`).join("")}</select><h2>Descarte de vacas</h2><label>Vacas para descarte desde (años)</label><select id="s_y">${[8,9,10,11,12,13,14,15].map(n=>`<option value="${n}" ${n===(+cfg().desc||12)?"selected":""}>${n} años</option>`).join("")}</select><h2>Almacenamiento</h2><p class="mu" id="s_st">Calculando…</p><h2>Moneda</h2><select id="s_c">${CUR.map(([x,l])=>`<option value="${x}" ${x===(cfg().cur||"C$")?"selected":""}>${l}</option>`).join("")}</select><button id="ok">Guardar</button><br><br><button class="s" id="cx">Cerrar</button>`);
+  sheet(`<h1>⚙️ Ajustes</h1>${licCard()}<h2>Finca</h2><div class="card" data-prof2><span class="b">${esc(P().name)||"Configurar perfil de la finca"}</span> ›</div><h2>Trabajadores</h2>${lst("Trabajador")}<button class="s" id="ap1">+ Agregar trabajador</button><h2>Contactos</h2>${lst("Contacto")}<button class="s" id="ap2">+ Agregar contacto</button><h2>Alertas de partos y vacunas</h2><label>Avisar con anticipación de</label><select id="s_d">${[7,15,30,45,60].map(n=>`<option value="${n}" ${n===AD()?"selected":""}>${n} días</option>`).join("")}</select><label>Vacías: avisar a los … días del último parto</label><select id="s_v">${[60,90,120].map(n=>`<option value="${n}" ${n===(+cfg().vac||90)?"selected":""}>${n} días</option>`).join("")}</select><h2>Descarte de vacas</h2><label>Vacas para descarte desde (años)</label><select id="s_y">${[8,9,10,11,12,13,14,15].map(n=>`<option value="${n}" ${n===(+cfg().desc||12)?"selected":""}>${n} años</option>`).join("")}</select><h2>Almacenamiento</h2><p class="mu" id="s_st">Calculando…</p><h2>Moneda</h2><select id="s_c">${CUR.map(([x,l])=>`<option value="${x}" ${x===(cfg().cur||"C$")?"selected":""}>${l}</option>`).join("")}</select><button id="ok">Guardar</button><br><br><button class="s" id="cx">Cerrar</button>`);
   if(navigator.storage&&navigator.storage.estimate)navigator.storage.estimate().then(e=>{const el=$("s_st");if(el)el.textContent="La app no limita la cantidad de animales. Hoy usa "+((e.usage||0)/1048576).toFixed(1)+" MB para "+S.animals.length+" animales (cada uno con foto ocupa unos 30 KB). Espacio disponible en el teléfono: "+((e.quota||0)/1073741824).toFixed(1)+" GB."});else $("s_st").textContent="La app no limita la cantidad de animales.";
-  $("ap1").onclick=()=>fPerson("Trabajador");$("ap2").onclick=()=>fPerson("Contacto");
+  if($("lic_new"))$("lic_new").onclick=()=>{close();showAct(true)};$("ap1").onclick=()=>fPerson("Trabajador");$("ap2").onclick=()=>fPerson("Contacto");
   $("ok").onclick=()=>{S.meta.cfg={days:+$("s_d").value,cur:$("s_c").value,vac:+$("s_v").value,desc:+$("s_y").value};save();close();render()};$("cx").onclick=close}
 function fPerson(kind,p){p=p||{};let ph=p.photo||"";const w=kind==="Trabajador";
   sheet(`<h1>${p.id?"Editar":"Nuevo"} ${kind.toLowerCase()}</h1><label>Nombre *</label><input id="pe_n" value="${esc(p.name)}">${w?`<label>N.º de cédula de identidad</label><input id="pe_c" value="${esc(p.cedula)}">`:""}<label>${w?"Cargo":"Tipo (veterinario, proveedor, comprador…)"}</label><input id="pe_r" value="${esc(p.role)}"><label>Teléfono</label><input id="pe_t" inputmode="tel" value="${esc(p.phone)}">${w?`<label>Foto</label><div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:10px"><img id="pe_pv" class="ph" style="width:64px;height:64px;${ph?"":"display:none"}" src="${ph}"><input type="file" id="pe_f" accept="image/*" style="margin:0"></div>`:""}<button id="ok">Guardar</button><br><br>${p.id?'<button class="d" id="del">Eliminar</button><br><br>':""}<button class="s" id="cx">Cancelar</button>`);
@@ -769,6 +816,7 @@ document.addEventListener("click",e=>{
   {const L=e.target.closest("a");if(L&&!L.dataset.t)return}
   const t=e.target.closest("[data-t]");if(t){e.preventDefault();tab=t.dataset.t;if(tab!=="animales"){selMode=false;SEL.clear()}render();return}
   const a=e.target.closest("[data-a]");if(a){detail(byId(a.dataset.a));return}
+  if(e.target.closest("[data-lic]")){showAct(true);return}
   if(e.target.closest("[data-an]")){fAnalisis();return}
   if(e.target.closest("[data-milk]")){fLeche(today());return}
   if(e.target.closest("[data-more]")){aLim+=50;render();return}
@@ -803,7 +851,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("input",e=>{if(e.target.id==="q"){q=e.target.value;aLim=50;const p=e.target.selectionStart;render();const i=$("q");i.focus();i.setSelectionRange(p,p)}});
 $("gear").onclick=fSet;$("fab").onclick=()=>tab==="rebano"?fMov():tab==="animales"?fAnimal():tab==="sanidad"?fSan():tab==="repro"?fRepro():fFin();
 (async()=>{try{const v=await idbGet();if(v)S=JSON.parse(v);else{const r=localStorage.getItem("tambo");if(r){S=JSON.parse(r);save()}}}catch(e){}
-  norm();render();
+  norm();if(await licInit())render();else showAct();
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(()=>{})})();
 </script>
