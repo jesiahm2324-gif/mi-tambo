@@ -311,7 +311,16 @@ function fFin(f){f=f||{};
   <label>Fecha</label><input type="date" id="f_d" value="${f.date||today()}">
   <label>Detalle (cliente, producto, animal…)</label><input id="f_n" value="${esc(f.note)}">
   <button id="ok">Guardar</button><br><br>${f.id?'<button class="d" id="del">Eliminar</button><br><br>':""}<button class="s" id="cx">Cancelar</button>`);
-  const tg=sel=>{const L=$("f_k").value==="ingreso"?ING:GAS;$("f_c").innerHTML=opts(L.concat(sel&&!L.includes(sel)?[sel]:[]),sel)};$("f_k").onchange=()=>tg();tg(f.cat);
+  const rk=()=>$("f_k").value==="ingreso"?"rubI":"rubG",
+    rl=sel=>{const base=$("f_k").value==="ingreso"?ING:GAS,ex=S.meta[rk()]||[],L=[...base.slice(0,-1),...ex.filter(x=>!base.includes(x)),base[base.length-1]];if(sel&&!L.includes(sel))L.splice(L.length-1,0,sel);return L},
+    tg=sel=>{$("f_c").innerHTML=opts(rl(sel),sel)+'<option value="__new">➕ Agregar otro rubro…</option>';$("f_c").dataset.prev=$("f_c").value};
+  $("f_k").onchange=()=>tg();tg(f.cat);
+  $("f_c").onchange=e=>{const el=e.target;if(el.value!=="__new"){el.dataset.prev=el.value;return}
+    const n=(prompt("Nombre del nuevo rubro ("+($("f_k").value==="ingreso"?"ingreso":"gasto")+")")||"").trim().replace(/\s+/g," ");
+    if(!n){el.value=el.dataset.prev;return}
+    const k=rk(),dup=rl().find(x=>x.toLowerCase()===n.toLowerCase());
+    if(dup){tg(dup);return}
+    S.meta[k]=S.meta[k]||[];S.meta[k].push(n);save();tg(n)};
   $("ok").onclick=()=>{const m=parseFloat($("f_m").value.replace(",","."));if(!(m>0))return alert("Ingresá un monto válido");
     const d=$("f_d").value||today(),o={kind:$("f_k").value,cat:$("f_c").value,amount:m,date:d,note:$("f_n").value.trim()};
     if(f.id)Object.assign(f,o);else S.fin.push({id:uid(),...o});
