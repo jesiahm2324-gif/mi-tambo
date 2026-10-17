@@ -175,7 +175,7 @@ const SAN=["Vacunación","Tratamiento","Mastitis","Desparasitación","Control ve
 const MOV=["Nacimiento","Compra","Venta","Muerte"];
 let aLim=50,aRep=false,PZ={},selMode=false,SEL=new Set();
 const animAll=()=>act().filter(a=>(a.tag+" "+a.name+" "+a.cat+" "+(a.owner||"")).toLowerCase().includes(q.toLowerCase())).sort(byAge);let S={animals:[],events:[],moves:[]},tab="rebano",q="";
-const norm=()=>{S.animals=S.animals||[];{const key=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase().replace(/\s+/g," "),cm={};S.animals.forEach(a=>{if(a.owner){const k=key(a.owner);if(!cm[k])cm[k]=a.owner}});S.animals.forEach(a=>{if(a.owner)a.owner=cm[key(a.owner)]})}S.animals=S.animals||[];S.events=S.events||[];S.moves=S.moves||[];S.repro=S.repro||[];S.fin=S.fin||[];S.meta=S.meta||{};S.tools=S.tools||[];S.milk=S.milk||[];S.potlog=S.potlog||[];S.weights=S.weights||[];S.sires=S.sires||[];try{sireMig()}catch(e){}CATS.length=0;CATS.push(...CAT0,...(S.meta.catList||[]).map(c=>c.name));if(!S.meta.milkGal){const f=cfg().unit==="gal"?(+cfg().gl||4):3.785;S.milk.forEach(m=>{m.l=Math.round(m.l/f*10)/10});S.meta.milkGal=true}linkPairs()};
+const norm=()=>{S.animals=S.animals||[];{const key=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase().replace(/\s+/g," "),cm={};S.animals.forEach(a=>{if(a.owner){const k=key(a.owner);if(!cm[k])cm[k]=a.owner}});S.animals.forEach(a=>{if(a.owner)a.owner=cm[key(a.owner)]})}S.animals=S.animals||[];S.events=S.events||[];S.moves=S.moves||[];S.repro=S.repro||[];S.fin=S.fin||[];S.meta=S.meta||{};S.tools=S.tools||[];S.milk=S.milk||[];S.potlog=S.potlog||[];S.weights=S.weights||[];S.sires=S.sires||[];try{sireMig()}catch(e){}try{gestMig()}catch(e){}CATS.length=0;CATS.push(...CAT0,...(S.meta.catList||[]).map(c=>c.name));if(!S.meta.milkGal){const f=cfg().unit==="gal"?(+cfg().gl||4):3.785;S.milk.forEach(m=>{m.l=Math.round(m.l/f*10)/10});S.meta.milkGal=true}linkPairs()};
 const IDB=()=>new Promise((res,rej)=>{const r=indexedDB.open("mitambo",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const idbGet=async()=>{const d=await IDB();return new Promise((res,rej)=>{const q=d.transaction("kv").objectStore("kv").get("S");q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
 const idbSet=async v=>{const d=await IDB();return new Promise((res,rej)=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,"S");t.oncomplete=res;t.onerror=()=>rej(t.error)})};
@@ -286,7 +286,7 @@ function vSanidad(){
   ${r.length?`<h2>En período de retiro</h2>${r.map(e=>`<div class="card warn"><div class="b">${nm(byId(e.aid))}</div><div>${e.type}${e.product?" · "+esc(e.product):""}</div><div>No enviar leche/carne hasta el ${fmt(until(e))}</div></div>`).join("")}`:""}
   <h2>Historial</h2>${l.map(e=>`<div class="card" data-e="${e.id}"><div class="row"><span class="b">${nm(byId(e.aid))}</span><span class="mu">${fmt(e.date)}</span></div><div>${e.type}${e.product?" · "+esc(e.product):""}</div>${e.note?`<div class="mu">${esc(e.note)}</div>`:""}</div>`).join("")||'<p class="mu">Sin registros sanitarios.</p>'}`;
 }
-const GEST=283,FEM=["Vaca en ordeñe","Vaca seca","Vaquillona"];
+const GEST=290,FEM=["Vaca en ordeñe","Vaca seca","Vaquillona"];
 const fem=()=>act().filter(a=>FEM.includes(a.cat));
 const ymd=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");
 const addD=(d,n)=>{const x=new Date(d+"T00:00");x.setDate(x.getDate()+n);return ymd(x)};
@@ -295,7 +295,7 @@ const dd=(a,b)=>Math.round((new Date(a+"T00:00")-new Date(b+"T00:00"))/864e5);
 function rs(aid){let s={st:"sin datos"};const A0=byId(aid),ev=S.repro.filter(r=>r.aid===aid);if(A0&&A0.id){const real=ev.filter(r=>r.type==="Parto").map(r=>r.date);births(A0).forEach(d=>{if(!real.includes(d))ev.push({type:"Parto",date:d})})}
   ev.sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
     if(r.type==="Servicio")s={st:"servida",svc:r.date,lp:s.lp,bull:r.bull};
-    else if(r.type==="Diagnóstico")s=r.result==="Preñada"?{...s,st:"preñada",due:r.due||(s.svc?addM(s.svc,9):null),bull:r.bull||s.bull}:{st:"vacía",lp:s.lp};
+    else if(r.type==="Diagnóstico")s=r.result==="Preñada"?{...s,st:"preñada",due:r.due||(s.svc?addD(s.svc,GEST):null),bull:r.bull||s.bull}:{st:"vacía",lp:s.lp};
     else if(r.type==="Parto")s={st:"parida",lp:r.date};
     else if(r.type==="Aborto")s={st:"vacía",lp:s.lp}});
   return s}
@@ -306,9 +306,9 @@ function linkPairs(){S.repro.filter(e=>e.type==="Diagnóstico"&&e.result==="Pre�
 function fPrenC(dx){const sv=S.repro.find(z=>z.id===dx.svc),a=byId(dx.aid);if(!sv)return fRepro(dx);const stp=sv.stype||((sv.detail||"").split(" · ")[0]==="Monta natural"?"Monta natural":"Inseminación");
   sheet(`<h1>Editar preñez</h1><p class="mu">${nm(a)}</p><label>Tipo de servicio</label><select id="pc_t">${opts(["Inseminación","Monta natural"],stp)}</select><label>Toro (monta natural) o toro / pajuela (inseminación)</label><div id="pc_b"></div><label>Fecha de la monta o inseminación</label><input type="date" id="pc_s" value="${sv.date}"><label>Fecha de la confirmación</label><input type="date" id="pc_d" value="${dx.date}"><label>Método</label><select id="pc_m">${opts(["Tacto","Ecografía","Observación (apuntes)"],dx.detail)}</select><label>Notas</label><input id="pc_n" value="${esc(dx.note)}"><div class="b" id="pc_p" style="margin:0 0 12px"></div><button id="ok">Guardar</button><br><br><button class="d" id="del">Eliminar la preñez</button><br><br><button class="s" id="cx">Cancelar</button>`);
   const bf=()=>{$("pc_b").innerHTML=parSel("pc_bs",sv.bull||"",1);parNew("pc_bs",sv.bull||"",1)};$("pc_t").onchange=bf;bf();
-  const up=()=>{$("pc_p").textContent=$("pc_s").value?"Parto probable: "+fmt(addM($("pc_s").value,9)):""};$("pc_s").oninput=up;$("pc_s").onchange=up;up();
+  const up=()=>{$("pc_p").textContent=$("pc_s").value?"Parto probable: "+fmt(addD($("pc_s").value,GEST)):""};$("pc_s").oninput=up;$("pc_s").onchange=up;up();
   $("ok").onclick=()=>{const sd=$("pc_s").value;if(!sd)return alert("Indicá la fecha de la monta");const dc=$("pc_d").value&&$("pc_d").value>sd?$("pc_d").value:sd,b=$("pc_bs").value.trim(),tp=$("pc_t").value;
-    sv.date=sd;sv.stype=tp;sv.bull=b;sv.detail=tp+(b?" · "+pname(b):"");Object.assign(dx,{date:dc,detail:$("pc_m").value,note:$("pc_n").value.trim(),bull:b,preg:sd,due:addM(sd,9),man:false});save();close();render();alert("Fecha probable de parto: "+fmt(addM(sd,9)))};
+    sv.date=sd;sv.stype=tp;sv.bull=b;sv.detail=tp+(b?" · "+pname(b):"");Object.assign(dx,{date:dc,detail:$("pc_m").value,note:$("pc_n").value.trim(),bull:b,preg:sd,due:addD(sd,GEST),man:false});save();close();render();alert("Fecha probable de parto: "+fmt(addD(sd,GEST)))};
   $("del").onclick=()=>{if(confirm("¿Eliminar la preñez completa (monta y confirmación)?")){S.repro=S.repro.filter(x=>x!==sv&&x!==dx);save();close();render()}};$("cx").onclick=close}
 function vRepro(){
   const t=today(),F=fem().map(a=>({a,s:rs(a.id)})),n=k=>F.filter(x=>x.s.st===k).length;
@@ -327,14 +327,14 @@ function vRepro(){
   ${plg("pr","Próximos partos",pr.length+sd.length,pr.map(x=>{const r=dd(x.s.due,t);return c(x,r<=0?"¡Parto esperado!":fmt(x.s.due)+" · en "+r+" d",r<=15)}).join("")+sd.map(x=>c(x,"sin fecha · tocá para cargarla",1)).join(""),pr[0]?"Próximo: "+nm(pr[0].a)+" · "+fmt(pr[0].s.due)+" ("+(dd(pr[0].s.due,t)<0?"pasó hace "+(-dd(pr[0].s.due,t))+" d":dd(pr[0].s.due,t)===0?"¡hoy!":"en "+dd(pr[0].s.due,t)+" d")+")":"Hay vacas preñadas sin fecha de parto",pr[0]?dd(pr[0].s.due,t)<=15:1)||'<p class="mu">Sin vacas preñadas.</p>'}
   ${plg("ev","Últimos eventos",all.length,l.map(evCard).join(""),l[0]?"Último: "+nm(byId(l[0].aid))+" · "+(l[0].svc?"Preñez confirmada":l[0].type)+" · "+fmt(l[0].date):"")||'<p class="mu">Sin eventos reproductivos.</p>'}`;
 }
-function refreshDue(aid){S.repro.filter(e=>e.aid===aid&&e.type==="Diagnóstico"&&e.result==="Preñada"&&!e.man).forEach(e=>{const sv=S.repro.filter(z=>z.aid===aid&&z.type==="Servicio"&&z.date<=e.date).sort((p,q)=>q.date.localeCompare(p.date))[0];if(sv){e.preg=sv.date;e.due=addM(sv.date,9)}})}
+function refreshDue(aid){S.repro.filter(e=>e.aid===aid&&e.type==="Diagnóstico"&&e.result==="Preñada"&&!e.man).forEach(e=>{const sv=S.repro.filter(z=>z.aid===aid&&z.type==="Servicio"&&z.date<=e.date).sort((p,q)=>q.date.localeCompare(p.date))[0];if(sv){e.preg=sv.date;e.due=addD(sv.date,GEST)}})}
 function fConf(aid){const a=byId(aid),sv=S.repro.filter(e=>e.aid===aid&&e.type==="Servicio").sort((x,y)=>y.date.localeCompare(x.date))[0];if(!sv)return alert("Esta vaca no tiene un servicio registrado.");
   sheet(`<h1>✅ Confirmar preñez</h1><p class="mu">${nm(a)}</p><label>Fecha de la monta / servicio (podés corregirla)</label><input type="date" id="cf_s" value="${sv.date}"><label>Toro</label>${parSel("cf_b",sv.bull||"",1)}<label>Resultado</label><select id="cf_r"><option>Preñada</option><option>Vacía</option></select><label>Fecha de la confirmación</label><input type="date" id="cf_d" value="${today()}"><label>Método</label><select id="cf_m">${opts(["Tacto","Ecografía","Observación (apuntes)"])}</select><div class="b" id="cf_p" style="margin:0 0 12px"></div><button id="ok">Guardar</button><br><br><button class="s" id="cx">Cancelar</button>`);
-  parNew("cf_b",sv.bull||"",1);const up=()=>{$("cf_p").textContent=$("cf_r").value==="Preñada"&&$("cf_s").value?"Parto probable: "+fmt(addM($("cf_s").value,9)):""};$("cf_s").oninput=up;$("cf_s").onchange=up;$("cf_r").onchange=up;up();
+  parNew("cf_b",sv.bull||"",1);const up=()=>{$("cf_p").textContent=$("cf_r").value==="Preñada"&&$("cf_s").value?"Parto probable: "+fmt(addD($("cf_s").value,GEST)):""};$("cf_s").oninput=up;$("cf_s").onchange=up;$("cf_r").onchange=up;up();
   $("ok").onclick=()=>{const sd=$("cf_s").value;if(!sd)return alert("Indicá la fecha de la monta");const dc=$("cf_d").value&&$("cf_d").value>sd?$("cf_d").value:(today()>sd?today():sd),b=$("cf_b").value,res=$("cf_r").value,tp=sv.stype||((sv.detail||"").split(" · ")[0]==="Monta natural"?"Monta natural":"Inseminación");
     sv.date=sd;sv.bull=b;sv.stype=tp;sv.detail=tp+(b?" · "+pname(b):"");
-    const dxId=uid();if(!sv.dx)sv.dx=dxId;S.repro.push({id:dxId,svc:sv.dx===dxId?sv.id:undefined,type:"Diagnóstico",aid,date:dc,note:"",detail:$("cf_m").value,result:res,bull:b,preg:res==="Preñada"?sd:"",due:res==="Preñada"?addM(sd,9):"",man:false});
-    save();close();render();if(res==="Preñada")alert("Fecha probable de parto: "+fmt(addM(sd,9)))};
+    const dxId=uid();if(!sv.dx)sv.dx=dxId;S.repro.push({id:dxId,svc:sv.dx===dxId?sv.id:undefined,type:"Diagnóstico",aid,date:dc,note:"",detail:$("cf_m").value,result:res,bull:b,preg:res==="Preñada"?sd:"",due:res==="Preñada"?addD(sd,GEST):"",man:false});
+    save();close();render();if(res==="Preñada")alert("Fecha probable de parto: "+fmt(addD(sd,GEST)))};
   $("cx").onclick=close}
 const bullF=(tipo,cur)=>parSel("x2",cur,1);
 function fRepro(E){E=E||{};const F=fem();if(!F.length)return alert("Primero cargá una vaca o vaquillona");
@@ -353,11 +353,11 @@ function fRepro(E){E=E||{};const F=fem();if(!F.length)return alert("Primero carg
   $("ok").onclick=()=>{const type=$("f_t").value,a=byId($("f_a").value),d=$("f_d").value||today();
     const x1=$("x1")?$("x1").value:"",x2=$("x2")?$("x2").value.trim():"",x3=$("x3")?$("x3").value:"";
     if(type==="Preñez confirmada"){const dc=$("x3").value&&$("x3").value>d?$("x3").value:(today()>d?today():d),tp=x1,bl=x2,svId=uid(),dxId=uid();
-      S.repro.push({id:svId,type:"Servicio",aid:a.id,date:d,note:$("f_n").value.trim(),detail:tp+(bl?" · "+pname(bl):""),result:"",stype:tp,bull:bl,dx:dxId},{id:dxId,svc:svId,type:"Diagnóstico",aid:a.id,date:dc,note:"",detail:$("x5").value,result:"Preñada",bull:bl,preg:d,due:addM(d,9),man:false});
-      save();close();render();alert("Preñez registrada. Fecha probable de parto: "+fmt(addM(d,9)));return}
+      S.repro.push({id:svId,type:"Servicio",aid:a.id,date:d,note:$("f_n").value.trim(),detail:tp+(bl?" · "+pname(bl):""),result:"",stype:tp,bull:bl,dx:dxId},{id:dxId,svc:svId,type:"Diagnóstico",aid:a.id,date:dc,note:"",detail:$("x5").value,result:"Preñada",bull:bl,preg:d,due:addD(d,GEST),man:false});
+      save();close();render();alert("Preñez registrada. Fecha probable de parto: "+fmt(addD(d,GEST)));return}
     const oldD=ed?E.date:null;const r=ed?E:{id:uid(),type,detail:"",result:""};Object.assign(r,{aid:a.id,date:d,note:$("f_n").value.trim()});
     if(type==="Servicio"){r.stype=x1;r.detail=x1+(x2?" · "+pname(x2):"");r.bull=x2;if(ed&&oldD&&d>oldD)S.repro.filter(z=>z.aid===a.id&&z.type==="Diagnóstico"&&!z.man&&z.date>=oldD&&z.date<d).forEach(z=>z.date=d)}
-    if(type==="Diagnóstico"){r.result=x1;r.detail=x2;r.bull=$("x4")?$("x4").value:"";if(x1==="Preñada"){const sv=S.repro.filter(z=>z.aid===a.id&&z.type==="Servicio"&&z.date<=d).sort((p,q)=>q.date.localeCompare(p.date))[0];const pd=$("x3").value||(sv?sv.date:"");r.man=!!$("x3").value&&!(sv&&$("x3").value===sv.date);r.preg=pd;r.due=pd?addM(pd,9):(ed&&r.due)||""}else{r.due="";r.preg=""}}
+    if(type==="Diagnóstico"){r.result=x1;r.detail=x2;r.bull=$("x4")?$("x4").value:"";if(x1==="Preñada"){const sv=S.repro.filter(z=>z.aid===a.id&&z.type==="Servicio"&&z.date<=d).sort((p,q)=>q.date.localeCompare(p.date))[0];const pd=$("x3").value||(sv?sv.date:"");r.man=!!$("x3").value&&!(sv&&$("x3").value===sv.date);r.preg=pd;r.due=pd?addD(pd,GEST):(ed&&r.due)||""}else{r.due="";r.preg=""}}
     if(type==="Parto"){if(ed){const p=(E.detail||"").split(" · ");p[0]=x3;r.detail=p.join(" · ")}else{r.detail=x3+" · "+x1+(x2?" #"+x2:"");
       if(x1!=="Mortinato"&&x2){if(!isSN(x2)&&act().some(z=>z.tag===x2))return alert("Esa caravana ya existe");
         S.animals.push({id:uid(),tag:x2,name:"",cat:x1==="Hembra"?"Ternera":"Ternero",born:d,breed:"",mom:refOf(a),dad:rs(a.id).bull||"",owner:a.owner||"",pot:a.pot||"",status:"activo"});
@@ -828,8 +828,8 @@ const potSel=(id,cur)=>{const L=[...new Set([...(S.meta.potList||[]),...potreros
 const potNew=(id,cur)=>{$(id).onchange=e=>{if(e.target.value!=="__new")return;const n=(prompt("Nombre del nuevo potrero")||"").trim();if(!n){e.target.value=cur||"";return}S.meta.potList=S.meta.potList||[];if(!S.meta.potList.includes(n))S.meta.potList.push(n);save();const o=document.createElement("option");o.textContent=n;e.target.insertBefore(o,e.target.lastChild);e.target.value=n}};
 const pp=a=>{const s=rs(a.id);return s.st==="preñada"?(s.due?" · Preñada, parto "+fmt(s.due):" · Preñada, sin fecha de parto"):""};
 function fPren(aid){const a=byId(aid),E=S.repro.filter(e=>e.aid===aid&&e.type==="Diagnóstico"&&e.result==="Preñada").sort((x,y)=>y.date.localeCompare(x.date))[0];if(!E)return alert("Esta vaca no tiene un diagnóstico de preñez registrado.");
-  sheet(`<h1>📅 Fecha de preñez</h1><p class="mu">${nm(a)}</p><label>Fecha en que se preñó (servicio o monta)</label><input type="date" id="pg_d" value="${E.preg||""}"><div class="b" id="pg_r" style="margin:-4px 0 12px"></div><label>Fecha probable de parto (9 meses después)</label><input type="date" id="pg_p" value="${E.due||""}"><button id="ok">Guardar</button><br><br><button class="s" id="cx">Cancelar</button>`);
-  const up=()=>{const d=$("pg_d").value;if(d){$("pg_p").value=addM(d,9);$("pg_r").textContent="Parto probable: "+fmt(addM(d,9))}};$("pg_d").onchange=up;$("pg_d").oninput=up;
+  sheet(`<h1>📅 Fecha de preñez</h1><p class="mu">${nm(a)}</p><label>Fecha en que se preñó (servicio o monta)</label><input type="date" id="pg_d" value="${E.preg||""}"><div class="b" id="pg_r" style="margin:-4px 0 12px"></div><label>Fecha probable de parto (290 días después)</label><input type="date" id="pg_p" value="${E.due||""}"><button id="ok">Guardar</button><br><br><button class="s" id="cx">Cancelar</button>`);
+  const up=()=>{const d=$("pg_d").value;if(d){$("pg_p").value=addD(d,GEST);$("pg_r").textContent="Parto probable: "+fmt(addD(d,GEST))}};$("pg_d").onchange=up;$("pg_d").oninput=up;
   $("ok").onclick=()=>{const p=$("pg_p").value;if(!p)return alert("Indicá la fecha de preñez o la fecha probable de parto");E.preg=$("pg_d").value;E.due=p;E.man=true;save();close();render();alert("Fecha probable de parto: "+fmt(p))};$("cx").onclick=close}
 function fAnimal(a){a=a||{};
   sheet(`<h1>${a.id?"Editar":"Nuevo"} animal</h1>
@@ -978,6 +978,7 @@ function xlsxLactAll(){const X=lactAll(),H=["Arete","Nombre","Dueño","Lactancia
 /* ===== Toros de referencia ===== */
 const SK={finca:"De mi finca",vecino:"De otra finca",pajuela:"Semen (pajuela)",otro:"Sin clasificar"},SAP=["Leche","Carne","Doble propósito"],SST=["Activo","Murió","Vendido","Ya no está"];
 const isSig=v=>v&&!String(v).startsWith("s:")&&!String(v).startsWith("id:")&&!byRef(v);
+function gestMig(){if(S.meta.gestMig)return;S.repro.forEach(e=>{if(e.type==="Diagnóstico"&&e.result==="Preñada"&&!e.man&&e.preg)e.due=addD(e.preg,GEST)});S.meta.gestMig=true}
 function sireMig(){if(S.meta.sireMig)return;
   const key={};S.sires.forEach(z=>key[fold(z.name)]=z);
   const get=n=>{const k=fold(n);if(!key[k]){const z={id:uid(),name:n,kind:"otro"};S.sires.push(z);key[k]=z}return"s:"+key[k].id};
