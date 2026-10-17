@@ -122,6 +122,7 @@ nav a b{display:flex;justify-content:center;filter:none;opacity:1;font-size:inhe
 .hero .tk{position:relative;display:flex;align-items:center;gap:6px;background:var(--card);color:var(--tx);border-radius:13px;padding:8px 10px 12px 12px;font-size:12.5px;overflow:hidden;box-shadow:0 2px 0 #0003;border-left:5px solid var(--k)}
 .hero .tk .tkn{flex:1;line-height:1.1;font-weight:600}.hero .tk b{font:700 20px var(--sf);font-variant-numeric:tabular-nums;color:var(--tx)}
 .hero .tk i{position:absolute;left:12px;bottom:5px;height:4px;border-radius:4px;width:calc((100% - 24px)*var(--w)/100%);min-width:4px;background:var(--k)}
+.hero .tk.tt{background:linear-gradient(145deg,#ffd76a,#e0a41f);color:#3d2800;border-left:0;padding:8px 12px;box-shadow:0 3px 0 #8a5d00}.hero .tk.tt .tkn{font-weight:700}.hero .tk.tt b{color:#3d2800;font-size:26px;line-height:1}.hero .tk.tt .tg{width:30px;height:30px;border-radius:10px;background:#3d28001f;box-shadow:none;color:#3d2800}.hero .tk.tt .tg svg{width:19px;height:19px}
 .mh{font:700 13px var(--sf);text-transform:uppercase;letter-spacing:.8px;color:var(--mu);margin:16px 4px 8px}
 .mn{padding:4px 0!important;overflow:hidden}
 .mi{display:flex;align-items:center;gap:12px;padding:11px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}.mi:active{background:color-mix(in srgb,var(--bd) 50%,transparent)}
@@ -739,8 +740,7 @@ const pinfo=(p,ph)=>[p.owner,p.loc,ph&&p.phone].filter(Boolean).join(" · ");
 function hdr(){const p=P(),A=act(),c={};A.forEach(x=>c[x.cat]=(c[x.cat]||0)+1);
   const mx=Math.max(1,...CATS.map(k=>c[k]||0)),cc=["#4be08f","#4aa8ff","#ffc83d","#ff6fa5","#ff9248","#a78bfa","#2fd4c4","#ff7a6b"];
   return `<div class="hero" data-prof><div class="hl">${p.logo?`<img class="ph" src="${p.logo}">`:'<div class="lg0">🐄</div>'}<div style="min-width:0"><div class="eb">Ganadería</div><h1>${esc(p.name)||"Mi Tambo"}</h1><div class="sb">${esc(pinfo(p))||"Tocá acá para configurar el perfil"}</div></div></div>
-  <div class="tt0"><span class="tg">${ic("cow")}</span><div><div class="tl">Total de animales</div><div class="tn">${A.length}</div></div></div>
-  <div class="tc">${CATS.map((k,i)=>`<div class="tk" style="--k:${cc[i%cc.length]}"><span class="tkn">${k}</span><b>${c[k]||0}</b><i style="--w:${Math.round((c[k]||0)/mx*100)}%"></i></div>`).join("")}</div></div>`}
+  <div class="tc">${CATS.map((k,i)=>`<div class="tk" style="--k:${cc[i%cc.length]}"><span class="tkn">${k}</span><b>${c[k]||0}</b><i style="--w:${Math.round((c[k]||0)/mx*100)}%"></i></div>`).join("")}<div class="tk tt" style="${CATS.length%2?"":"grid-column:1/-1"}"><span class="tg">${ic("cow")}</span><span class="tkn">Total de animales</span><b>${A.length}</b></div></div></div>`}
 const profHtml=()=>{const p=P();return (p.name||p.logo)?`<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">${p.logo?`<img src="${p.logo}" style="width:64px;height:64px;border-radius:50%;object-fit:cover">`:""}<div><div style="font-size:20px;font-weight:700">${esc(p.name)}</div><div style="color:#666;font-size:13px">${esc(pinfo(p,1))}</div></div></div>`:""};
 const profT=()=>{const p=P(),l=[p.name,pinfo(p,1)].filter(Boolean).join("\n");return l?l+"\n":""};
 function fProf(){const p=P();let lg=p.logo||"";
