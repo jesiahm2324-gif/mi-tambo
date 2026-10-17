@@ -123,6 +123,7 @@ nav a b{display:flex;justify-content:center;filter:none;opacity:1;font-size:inhe
 .hero .tk .tkn{flex:1;line-height:1.1;font-weight:600}.hero .tk b{font:700 20px var(--sf);font-variant-numeric:tabular-nums;color:var(--tx)}
 .hero .tk i{position:absolute;left:12px;bottom:5px;height:4px;border-radius:4px;width:calc((100% - 24px)*var(--w)/100%);min-width:4px;background:var(--k)}
 .hero .tk.tt{background:linear-gradient(145deg,#ffd76a,#e0a41f);color:#3d2800;border-left:0;padding:8px 12px;box-shadow:0 3px 0 #8a5d00}.hero .tk.tt .tkn{font-weight:700}.hero .tk.tt b{color:#3d2800;font-size:26px;line-height:1}.hero .tk.tt .tg{width:30px;height:30px;border-radius:10px;background:#3d28001f;box-shadow:none;color:#3d2800}.hero .tk.tt .tg svg{width:19px;height:19px}
+.mh.tgl{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 6px 6px 4px;border-radius:10px;-webkit-tap-highlight-color:transparent}.mh.tgl:active{background:color-mix(in srgb,var(--bd) 50%,transparent)}
 .mh{font:700 13px var(--sf);text-transform:uppercase;letter-spacing:.8px;color:var(--mu);margin:16px 4px 8px}
 .mn{padding:4px 0!important;overflow:hidden}
 .mi{display:flex;align-items:center;gap:12px;padding:11px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}.mi:active{background:color-mix(in srgb,var(--bd) 50%,transparent)}
@@ -258,7 +259,7 @@ function vRebano(){
   const bMov=m.map(x=>`<div class="mr"><div class="row"><b>${x.type}</b><span class="mu">${fmt(x.date)}</span></div><div class="mu">#${esc(x.tag)}${x.note?" · "+esc(x.note):""}</div></div>`).join("")||'<p class="mu">Sin movimientos todavía.</p>';
   const bRep=`<div class="rg"><div><b>${R.pre}</b>Preñadas</div><div><b>${R.ser}</b>Servidas</div><div><b>${R.par}</b>Paridas</div><div><b>${R.vac}</b>Vacías</div></div><p class="mu" style="margin:8px 0 0">De ${F.length} hembras (vacas y vaquillonas).</p>`;
   const bRet=ret.map(e=>`<div class="mr"><div class="row"><b>${nm(byId(e.aid))}</b><span class="mu">hasta ${fmt(until(e))}</span></div><div class="mu">${e.type}${e.product?" · "+esc(e.product):""}</div></div>`).join("")||'<p class="mu">Ningún animal en retiro.</p>';
-  const menu=`<div class="mh">Más del rebaño</div><div class="card mn">
+  const mo=!!S.meta.mnOpen,menu=`<div class="mh tgl" data-mnh><span>Más del rebaño</span><span class="mc ${mo?"op":""}">${ic("chev")}</span></div>${mo?`<div class="card mn">
   ${MNI("inv",["#3b8f6a","#1f5a43","#123226","file"],"Inventario del mes","Inicial "+inv[0][1]+" · Final "+inv[5][1],"",bInv,o==="inv")}
   ${MNI("mov",["#6aa9e8","#2f6fb5","#1b4478","tag"],"Últimos movimientos",m[0]?m[0].type+" · #"+esc(m[0].tag)+" · "+fmt(m[0].date):"Sin movimientos todavía","",bMov,o==="mov")}
   ${MNI("rep",["#e0709a","#b0376a","#6e1d40","heart"],"Estado reproductivo",R.pre+" preñadas · "+R.ser+" servidas","",bRep,o==="rep")}
@@ -269,7 +270,7 @@ function vRebano(){
   ${MNI("",["#e0b955","#a8832f","#6b5218","chart"],"Análisis e indicadores","Gráficos e informe","data-an")}
   ${MNI("",["#3b8f6a","#1f5a43","#123226","file"],"Reportes y respaldo",lb?"Respaldo: "+fmt(lb):"Sin respaldo aún","data-rep",0,0,old)}
   ${MNI("",["#e58f5b","#b4531f","#7a3611","tool"],"Herramientas",S.tools.length+" registradas","data-tools")}
-  </div>`;
+  </div>`:""}`;
   return `${hdr()}${lhCard()}${qaRow()}${licWarn()}${alCard(AL)}${fsCard()}${menu}`;
 }
 function vAnimales(){
@@ -1018,9 +1019,9 @@ function sireDetail(s){const X=sRows(s),t=X.t,H=[...t.H].sort((a,b)=>(b.born||""
   <h2>Datos del toro</h2><div class="card"><table class="rt">${X.I.map(r=>`<tr><td>${r[0]}</td><td>${esc(r[1])}</td></tr>`).join("")||'<tr><td>Todavía sin datos. Tocá Editar para completarlos.</td></tr>'}</table></div>
   ${s.note?`<div class="card"><div class="mu">Características y notas</div><div>${esc(s.note)}</div></div>`:""}
   <h2>Análisis de su descendencia</h2><div class="card"><table class="rt">${X.A.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table></div>
-  <h2>Hijos (${H.length})</h2>${H.map(a=>`<div class="card" data-h="${a.id}"><div class="row"><span class="b">${nm(a)}</span><span class="tag">${a.cat}</span></div><div class="mu">${isM(a.cat)?"Macho":"Hembra"}${a.born?" · Nació "+fmt(a.born):""}${a.status==="baja"?" · (baja)":""}</div></div>`).join("")||'<p class="mu">Todavía no hay hijos con este padre. Elegilo como padre al registrar o editar un animal.</p>'}
+  <h2 id="hjh" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"><span>Hijos (${H.length})</span><span class="mc" id="hjc">${ic("chev")}</span></h2><div id="hjb" style="display:none">${H.map(a=>`<div class="card" data-h="${a.id}"><div class="row"><span class="b">${nm(a)}</span><span class="tag">${a.cat}</span></div><div class="mu">${isM(a.cat)?"Macho":"Hembra"}${a.born?" · Nació "+fmt(a.born):""}${a.status==="baja"?" · (baja)":""}</div></div>`).join("")||'<p class="mu">Todavía no hay hijos con este padre. Elegilo como padre al registrar o editar un animal.</p>'}</div>
   <button id="ed">Editar</button><br><br><button class="s" id="p1">📄 Hoja del toro (PDF)</button><br><br><button class="s" id="p2">📊 Hoja del toro (Excel)</button><br><br><button class="s" id="bk">Volver a la lista</button>`);
-  $("ed").onclick=()=>fSire(s);$("p1").onclick=()=>pdfSire(s);$("p2").onclick=()=>xlsxSire(s);$("bk").onclick=fSires;
+  $("hjh").onclick=()=>{const o=$("hjb").style.display==="none";$("hjb").style.display=o?"block":"none";$("hjc").classList.toggle("op",o)};$("ed").onclick=()=>fSire(s);$("p1").onclick=()=>pdfSire(s);$("p2").onclick=()=>xlsxSire(s);$("bk").onclick=fSires;
   document.querySelectorAll("[data-h]").forEach(el=>el.onclick=()=>detail(byId(el.dataset.h)))}
 function fSire(s){const nw=!s;s=s||{};let ph=s.photo||"";
   sheet(`<h1>${nw?"Nuevo toro de referencia":"Editar toro"}</h1>
@@ -1092,6 +1093,7 @@ document.addEventListener("click",e=>{
   const a=e.target.closest("[data-a]");if(a){detail(byId(a.dataset.a));return}
   if(e.target.closest("[data-lic]")){showAct(true);return}
   if(e.target.closest("[data-an]")){fAnalisis();return}
+  if(e.target.closest("[data-mnh]")){S.meta.mnOpen=!S.meta.mnOpen;save();render();return}
   {const mn=e.target.closest("[data-mn]");if(mn){PZ.mn=PZ.mn===mn.dataset.mn?null:mn.dataset.mn;render();return}}
   if(e.target.closest("[data-sires]")){fSires();return}
   if(e.target.closest("[data-qm]")){fQuick();return}
