@@ -174,7 +174,7 @@ const SAN=["Vacunación","Tratamiento","Mastitis","Desparasitación","Control ve
 const MOV=["Nacimiento","Compra","Venta","Muerte"];
 let aLim=50,aRep=false,PZ={},selMode=false,SEL=new Set();
 const animAll=()=>act().filter(a=>(a.tag+" "+a.name+" "+a.cat+" "+(a.owner||"")).toLowerCase().includes(q.toLowerCase())).sort(byAge);let S={animals:[],events:[],moves:[]},tab="rebano",q="";
-const norm=()=>{S.animals=S.animals||[];{const key=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase().replace(/\s+/g," "),cm={};S.animals.forEach(a=>{if(a.owner){const k=key(a.owner);if(!cm[k])cm[k]=a.owner}});S.animals.forEach(a=>{if(a.owner)a.owner=cm[key(a.owner)]})}S.animals=S.animals||[];S.events=S.events||[];S.moves=S.moves||[];S.repro=S.repro||[];S.fin=S.fin||[];S.meta=S.meta||{};S.tools=S.tools||[];S.milk=S.milk||[];S.potlog=S.potlog||[];S.weights=S.weights||[];CATS.length=0;CATS.push(...CAT0,...(S.meta.catList||[]).map(c=>c.name));if(!S.meta.milkGal){const f=cfg().unit==="gal"?(+cfg().gl||4):3.785;S.milk.forEach(m=>{m.l=Math.round(m.l/f*10)/10});S.meta.milkGal=true}linkPairs()};
+const norm=()=>{S.animals=S.animals||[];{const key=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase().replace(/\s+/g," "),cm={};S.animals.forEach(a=>{if(a.owner){const k=key(a.owner);if(!cm[k])cm[k]=a.owner}});S.animals.forEach(a=>{if(a.owner)a.owner=cm[key(a.owner)]})}S.animals=S.animals||[];S.events=S.events||[];S.moves=S.moves||[];S.repro=S.repro||[];S.fin=S.fin||[];S.meta=S.meta||{};S.tools=S.tools||[];S.milk=S.milk||[];S.potlog=S.potlog||[];S.weights=S.weights||[];S.sires=S.sires||[];try{sireMig()}catch(e){}CATS.length=0;CATS.push(...CAT0,...(S.meta.catList||[]).map(c=>c.name));if(!S.meta.milkGal){const f=cfg().unit==="gal"?(+cfg().gl||4):3.785;S.milk.forEach(m=>{m.l=Math.round(m.l/f*10)/10});S.meta.milkGal=true}linkPairs()};
 const IDB=()=>new Promise((res,rej)=>{const r=indexedDB.open("mitambo",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const idbGet=async()=>{const d=await IDB();return new Promise((res,rej)=>{const q=d.transaction("kv").objectStore("kv").get("S");q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
 const idbSet=async v=>{const d=await IDB();return new Promise((res,rej)=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,"S");t.oncomplete=res;t.onerror=()=>rej(t.error)})};
@@ -263,6 +263,7 @@ function vRebano(){
   ${MNI("mov",["#6aa9e8","#2f6fb5","#1b4478","tag"],"Últimos movimientos",m[0]?m[0].type+" · #"+esc(m[0].tag)+" · "+fmt(m[0].date):"Sin movimientos todavía","",bMov,o==="mov")}
   ${MNI("rep",["#e0709a","#b0376a","#6e1d40","heart"],"Estado reproductivo",R.pre+" preñadas · "+R.ser+" servidas","",bRep,o==="rep")}
   ${MNI("ret",["#e58f5b","#b4531f","#7a3611","shield"],"En período de retiro",ret.length?ret.length+" en retiro":"Ninguno en retiro","",bRet,o==="ret")}
+  ${MNI("",["#b07a4f","#7a4a26","#4a2a12","bull"],"Toros de referencia",S.sires.length+" registrado"+(S.sires.length===1?"":"s")+" · fuera del inventario","data-sires")}
   <div class="md"></div>
   ${MNI("",["#6aa9e8","#2f6fb5","#1b4478","drop"],"Producción de leche","Hoy "+fmtMilk(milkToday()),"data-milk")}
   ${MNI("",["#e0b955","#a8832f","#6b5218","chart"],"Análisis e indicadores","Gráficos e informe","data-an")}
@@ -303,7 +304,7 @@ const evCard=e=>{const sv=e.svc&&S.repro.find(z=>z.id===e.svc);return `<div clas
 function linkPairs(){S.repro.filter(e=>e.type==="Diagnóstico"&&e.result==="Preñada"&&!e.svc&&!e.nl).forEach(d=>{const sv=S.repro.filter(z=>z.aid===d.aid&&z.type==="Servicio"&&z.date<=d.date&&!z.dx).sort((p,q)=>q.date.localeCompare(p.date))[0];if(sv){d.svc=sv.id;sv.dx=d.id}else d.nl=1})}
 function fPrenC(dx){const sv=S.repro.find(z=>z.id===dx.svc),a=byId(dx.aid);if(!sv)return fRepro(dx);const stp=sv.stype||((sv.detail||"").split(" · ")[0]==="Monta natural"?"Monta natural":"Inseminación");
   sheet(`<h1>Editar preñez</h1><p class="mu">${nm(a)}</p><label>Tipo de servicio</label><select id="pc_t">${opts(["Inseminación","Monta natural"],stp)}</select><label>Toro (monta natural) o toro / pajuela (inseminación)</label><div id="pc_b"></div><label>Fecha de la monta o inseminación</label><input type="date" id="pc_s" value="${sv.date}"><label>Fecha de la confirmación</label><input type="date" id="pc_d" value="${dx.date}"><label>Método</label><select id="pc_m">${opts(["Tacto","Ecografía","Observación (apuntes)"],dx.detail)}</select><label>Notas</label><input id="pc_n" value="${esc(dx.note)}"><div class="b" id="pc_p" style="margin:0 0 12px"></div><button id="ok">Guardar</button><br><br><button class="d" id="del">Eliminar la preñez</button><br><br><button class="s" id="cx">Cancelar</button>`);
-  const bf=()=>{$("pc_b").innerHTML=$("pc_t").value==="Monta natural"?parSel("pc_bs",sv.bull||"",1):`<input id="pc_bs" placeholder="Nombre del toro o pajuela" value="${esc(pname(sv.bull)||"")}">`;if($("pc_t").value==="Monta natural")parNew("pc_bs",sv.bull||"",1)};$("pc_t").onchange=bf;bf();
+  const bf=()=>{$("pc_b").innerHTML=parSel("pc_bs",sv.bull||"",1);parNew("pc_bs",sv.bull||"",1)};$("pc_t").onchange=bf;bf();
   const up=()=>{$("pc_p").textContent=$("pc_s").value?"Parto probable: "+fmt(addM($("pc_s").value,9)):""};$("pc_s").oninput=up;$("pc_s").onchange=up;up();
   $("ok").onclick=()=>{const sd=$("pc_s").value;if(!sd)return alert("Indicá la fecha de la monta");const dc=$("pc_d").value&&$("pc_d").value>sd?$("pc_d").value:sd,b=$("pc_bs").value.trim(),tp=$("pc_t").value;
     sv.date=sd;sv.stype=tp;sv.bull=b;sv.detail=tp+(b?" · "+pname(b):"");Object.assign(dx,{date:dc,detail:$("pc_m").value,note:$("pc_n").value.trim(),bull:b,preg:sd,due:addM(sd,9),man:false});save();close();render();alert("Fecha probable de parto: "+fmt(addM(sd,9)))};
@@ -334,7 +335,7 @@ function fConf(aid){const a=byId(aid),sv=S.repro.filter(e=>e.aid===aid&&e.type==
     const dxId=uid();if(!sv.dx)sv.dx=dxId;S.repro.push({id:dxId,svc:sv.dx===dxId?sv.id:undefined,type:"Diagnóstico",aid,date:dc,note:"",detail:$("cf_m").value,result:res,bull:b,preg:res==="Preñada"?sd:"",due:res==="Preñada"?addM(sd,9):"",man:false});
     save();close();render();if(res==="Preñada")alert("Fecha probable de parto: "+fmt(addM(sd,9)))};
   $("cx").onclick=close}
-const bullF=(tipo,cur)=>tipo==="Monta natural"?parSel("x2",cur,1):`<input id="x2" placeholder="Nombre del toro o pajuela" value="${esc(cur)}">`;
+const bullF=(tipo,cur)=>parSel("x2",cur,1);
 function fRepro(E){E=E||{};const F=fem();if(!F.length)return alert("Primero cargá una vaca o vaquillona");
   const ed=!!E.id,stp=E.stype||((E.detail||"").split(" · ")[0]==="Monta natural"?"Monta natural":"Inseminación"),dp=(E.detail||"").split(" · ")[0];
   const X={Servicio:`<label>Tipo de servicio</label><select id="x1">${opts(["Inseminación","Monta natural"],stp)}</select><label>Toro (monta natural) o nombre del toro / pajuela (inseminación)</label><div id="x2w"></div>`,
@@ -347,7 +348,7 @@ function fRepro(E){E=E||{};const F=fem();if(!F.length)return alert("Primero carg
   <label>Fecha</label><input type="date" id="f_d" value="${E.date||today()}">
   <div id="xx"></div><label>Notas</label><input id="f_n" value="${esc(E.note)}">
   <button id="ok">Guardar</button><br><br>${ed?'<button class="d" id="del">Eliminar</button><br><br>':""}<button class="s" id="cx">Cancelar</button>`);
-  const tg=()=>{const t=$("f_t").value;$("xx").innerHTML=X[t];if(t==="Servicio"||t==="Preñez confirmada"){const f=()=>{$("x2w").innerHTML=bullF($("x1").value,E.bull||"");if($("x1").value==="Monta natural")parNew("x2",E.bull||"",1)};$("x1").onchange=f;f()}if(t==="Diagnóstico")parNew("x4",E.bull||"",1)};$("f_t").onchange=tg;tg();
+  const tg=()=>{const t=$("f_t").value;$("xx").innerHTML=X[t];if(t==="Servicio"||t==="Preñez confirmada"){const f=()=>{$("x2w").innerHTML=bullF($("x1").value,E.bull||"");parNew("x2",E.bull||"",1)};$("x1").onchange=f;f()}if(t==="Diagnóstico")parNew("x4",E.bull||"",1)};$("f_t").onchange=tg;tg();
   $("ok").onclick=()=>{const type=$("f_t").value,a=byId($("f_a").value),d=$("f_d").value||today();
     const x1=$("x1")?$("x1").value:"",x2=$("x2")?$("x2").value.trim():"",x3=$("x3")?$("x3").value:"";
     if(type==="Preñez confirmada"){const dc=$("x3").value&&$("x3").value>d?$("x3").value:(today()>d?today():d),tp=x1,bl=x2,svId=uid(),dxId=uid();
@@ -478,7 +479,7 @@ const edad=d=>{const p=ageP(d);if(!p)return"";const t=[[p[0],"año","años"],[p[
 const edadC=d=>{const p=ageP(d);return p?p[0]+"a "+p[1]+"m "+p[2]+"d":""};
 const sexo=a=>isM(a.cat)?"Macho":"Hembra";
 function cfg(){return S.meta.cfg||{}}
-const IC={home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>',tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".6" fill="currentColor"/>',shield:'<path d="M12 3 4 6v6c0 4.5 3.2 8 8 9 4.8-1 8-4.5 8-9V6z"/><path d="M12 9v6M9 12h6"/>',heart:'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',wallet:'<path d="M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v3"/><path d="M3 6v12a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3"/><path d="M21 12h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1z"/>',drop:'<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',chart:'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-5M13 17V8M18 17v-3"/>',tool:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>',file:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',check:'<path d="M20 6 9 17l-5-5"/>',chev:'<path d="m9 6 6 6-6 6"/>',plus:'<path d="M12 5v14M5 12h14"/>',cow:'<path d="M4 8V5l3 2h10l3-2v3"/><path d="M4 8c-1 2 0 4 2 5v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-3c2-1 3-3 2-5"/><circle cx="9" cy="11" r=".7" fill="currentColor"/><circle cx="15" cy="11" r=".7" fill="currentColor"/><path d="M10 16h4"/>'};
+const IC={home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>',tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".6" fill="currentColor"/>',shield:'<path d="M12 3 4 6v6c0 4.5 3.2 8 8 9 4.8-1 8-4.5 8-9V6z"/><path d="M12 9v6M9 12h6"/>',heart:'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',wallet:'<path d="M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v3"/><path d="M3 6v12a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3"/><path d="M21 12h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1z"/>',drop:'<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',chart:'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-5M13 17V8M18 17v-3"/>',tool:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>',file:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',check:'<path d="M20 6 9 17l-5-5"/>',bull:'<path d="M4 4c0 3 1 5 3 6"/><path d="M20 4c0 3-1 5-3 6"/><path d="M7 10h10l-1 7a4 4 0 0 1-8 0z"/><path d="M10 14h.01M14 14h.01"/>',chev:'<path d="m9 6 6 6-6 6"/>',plus:'<path d="M12 5v14M5 12h14"/>',cow:'<path d="M4 8V5l3 2h10l3-2v3"/><path d="M4 8c-1 2 0 4 2 5v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-3c2-1 3-3 2-5"/><circle cx="9" cy="11" r=".7" fill="currentColor"/><circle cx="15" cy="11" r=".7" fill="currentColor"/><path d="M10 16h4"/>'};
 const ic=(n,sz)=>`<svg class="ic" viewBox="0 0 24 24" ${sz?`width="${sz}" height="${sz}"`:""} fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||""}</svg>`;
 const AD=()=>+cfg().days||30;
 const byTag=t=>t&&S.animals.find(x=>x.tag===t);
@@ -798,7 +799,7 @@ const isSN=t=>/^s\/?n$/i.test(String(t||"").trim());
 const dupTag=t=>isSN(t)||S.animals.filter(z=>z.tag===t).length>1;
 const refOf=a=>dupTag(a.tag)?"id:"+a.id:a.tag;
 const byRef=v=>!v?null:String(v).startsWith("id:")?S.animals.find(a=>a.id===v.slice(3)):S.animals.find(a=>a.tag===v);
-const pname=v=>{if(!v)return"";const x=byRef(v);return x?"#"+x.tag+(x.name?" "+x.name:""):v};
+const pname=v=>{if(!v)return"";if(String(v).startsWith("s:")){const z=S.sires.find(x=>x.id===v.slice(2));return z?z.name:"(toro eliminado)"}const x=byRef(v);return x?"#"+x.tag+(x.name?" "+x.name:""):v};
 const isMom=(x,a)=>x.mom&&(x.mom==="id:"+a.id||(x.mom===a.tag&&!dupTag(a.tag)));
 const isDad=(x,a)=>x.dad&&(x.dad==="id:"+a.id||(x.dad===a.tag&&!dupTag(a.tag)));
 function births(a){const ev=S.repro.filter(r=>r.aid===a.id&&r.type==="Parto").map(r=>r.date);[...new Set(S.animals.filter(x=>x.born&&isMom(x,a)).map(x=>x.born))].forEach(d=>{if(!ev.some(e=>Math.abs(dd(e,d))<=5))ev.push(d)});return ev.sort()}
@@ -819,9 +820,9 @@ const fold=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLo
 const uniq=a=>{const m=new Set();return a.filter(x=>x&&!m.has(fold(x))&&m.add(fold(x)))};
 const lsel=(id,cur,base,key,ph)=>{const L=uniq([...base,...(S.meta[key]||[]),...(cur?[cur]:[])]);cur=L.find(x=>fold(x)===fold(cur))||cur;return `<select id="${id}"><option value="">${ph}</option>${L.map(p=>`<option ${p===cur?"selected":""}>${esc(p)}</option>`).join("")}<option value="__new">➕ Agregar otro…</option></select>`};
 const lnew=(id,cur,key,msg)=>{$(id).addEventListener("change",e=>{if(e.target.value!=="__new")return;const n=(prompt(msg)||"").trim();if(!n){e.target.value=cur||"";return}S.meta[key]=S.meta[key]||[];if(!S.meta[key].includes(n))S.meta[key].push(n);save();const o=document.createElement("option");o.textContent=n;e.target.insertBefore(o,e.target.lastChild);e.target.value=n})};
-const parSel=(id,cur,male,me)=>{const A=S.animals.filter(a=>a.id!==me&&(male?a.cat==="Toro":FEM.includes(a.cat))),vals=new Set(A.flatMap(a=>[a.tag,refOf(a)])),ex=[...new Set([...(S.meta[male?"sireList":"damList"]||[]),...(male?S.repro.map(r=>r.bull).filter(Boolean):[]),...(cur?[cur]:[])])].filter(v=>v&&!vals.has(v));
-  return `<select id="${id}"><option value="">— ${male?"Sin toro / padre":"Sin madre registrada"} —</option>${A.map(a=>`<option value="${esc(refOf(a))}" ${(refOf(a)===cur||(a.tag===cur&&!dupTag(a.tag)))?"selected":""}>#${esc(a.tag)} ${esc(a.name)}${a.status==="baja"?" (baja)":""}</option>`).join("")}${ex.map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v)}</option>`).join("")}<option value="__new">➕ Otro (no registrado)…</option></select>`};
-const parNew=(id,cur,male)=>{$(id).addEventListener("change",e=>{if(e.target.value!=="__new")return;const n=(prompt(male?"Nombre o arete del toro":"Arete o nombre de la madre")||"").trim();if(!n){e.target.value=cur||"";return}const k=male?"sireList":"damList";S.meta[k]=S.meta[k]||[];if(!S.meta[k].includes(n))S.meta[k].push(n);save();const o=document.createElement("option");o.value=o.textContent=n;e.target.insertBefore(o,e.target.lastChild);e.target.value=n})};
+const parSel=(id,cur,male,me)=>{const A=S.animals.filter(a=>a.id!==me&&(male?a.cat==="Toro":FEM.includes(a.cat))),vals=new Set(A.flatMap(a=>[a.tag,refOf(a)])),ex=[...new Set([...(S.meta[male?"sireList":"damList"]||[]),...(male?S.repro.map(r=>r.bull).filter(Boolean):[]),...(cur?[cur]:[])])].filter(v=>v&&!vals.has(v)&&!String(v).startsWith("s:"));
+  return `<select id="${id}"><option value="">— ${male?"Sin toro / padre":"Sin madre registrada"} —</option>${A.map(a=>`<option value="${esc(refOf(a))}" ${(refOf(a)===cur||(a.tag===cur&&!dupTag(a.tag)))?"selected":""}>#${esc(a.tag)} ${esc(a.name)}${a.status==="baja"?" (baja)":""}</option>`).join("")}${male&&S.sires.length?`<optgroup label="Toros de referencia">${[...S.sires].sort((p,q)=>p.name.localeCompare(q.name,"es")).map(z=>`<option value="s:${z.id}" ${("s:"+z.id)===cur?"selected":""}>${esc(z.name)}</option>`).join("")}</optgroup>`:""}${ex.map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v)}</option>`).join("")}<option value="__new">${male?"➕ Nuevo toro de referencia…":"➕ Otro (no registrado)…"}</option></select>`};
+const parNew=(id,cur,male)=>{$(id).addEventListener("change",e=>{if(e.target.value!=="__new")return;const n=(prompt(male?"Nombre o arete del toro":"Arete o nombre de la madre")||"").trim();if(!n){e.target.value=cur||"";return}if(male){let z=S.sires.find(x=>fold(x.name)===fold(n));if(!z){z={id:uid(),name:n,kind:"otro"};S.sires.push(z)}save();let o=[...e.target.options].find(x=>x.value==="s:"+z.id);if(!o){o=document.createElement("option");o.value="s:"+z.id;o.textContent=z.name;e.target.insertBefore(o,e.target.lastChild)}e.target.value="s:"+z.id;return}const k="damList";S.meta[k]=S.meta[k]||[];if(!S.meta[k].includes(n))S.meta[k].push(n);save();const o=document.createElement("option");o.value=o.textContent=n;e.target.insertBefore(o,e.target.lastChild);e.target.value=n})};
 const potSel=(id,cur)=>{const L=[...new Set([...(S.meta.potList||[]),...potreros(),...(cur?[cur]:[])])];return `<select id="${id}"><option value="">— Sin potrero —</option>${L.map(p=>`<option ${p===cur?"selected":""}>${esc(p)}</option>`).join("")}<option value="__new">➕ Agregar otro…</option></select>`};
 const potNew=(id,cur)=>{$(id).onchange=e=>{if(e.target.value!=="__new")return;const n=(prompt("Nombre del nuevo potrero")||"").trim();if(!n){e.target.value=cur||"";return}S.meta.potList=S.meta.potList||[];if(!S.meta.potList.includes(n))S.meta.potList.push(n);save();const o=document.createElement("option");o.textContent=n;e.target.insertBefore(o,e.target.lastChild);e.target.value=n}};
 const pp=a=>{const s=rs(a.id);return s.st==="preñada"?(s.due?" · Preñada, parto "+fmt(s.due):" · Preñada, sin fecha de parto"):""};
@@ -972,6 +973,104 @@ function pdfLactAll(){const X=lactAll(),x=[40,150,195,235,275,315,385],it=[...pd
 function xlsxLactAll(){const X=lactAll(),H=["Arete","Nombre","Dueño","Lactancia N.º","Fecha de parto","Fin / corte","En curso","Sexo de la cría","Tipo de parto","Días","Días con leche","Galones totales","Galones por día","Partos de la vaca","Hembras","Machos","Mortinatos"],R=[];
   X.R.forEach(r=>r.D.rows.forEach(q=>R.push([r.a.tag,r.a.name||"",r.a.owner||"",q.n,{d:q.from},{d:q.to},q.open?"Sí":"No",q.sx,q.tp,q.dias,q.dreg,q.l,q.avg,r.D.n,r.D.h,r.D.m,r.D.mo])));
   shareFile(new File([makeXlsx("Lactancias y partos",H,R,[14,18,18,13,16,14,9,15,13,8,14,13,13,14,10,10,11])],"lactancias-partos-hato-"+today()+".xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}))}
+
+/* ===== Toros de referencia ===== */
+const SK={finca:"De mi finca",vecino:"De otra finca",pajuela:"Semen (pajuela)",otro:"Sin clasificar"},SAP=["Leche","Carne","Doble propósito"],SST=["Activo","Murió","Vendido","Ya no está"];
+const isSig=v=>v&&!String(v).startsWith("s:")&&!String(v).startsWith("id:")&&!byRef(v);
+function sireMig(){if(S.meta.sireMig)return;
+  const key={};S.sires.forEach(z=>key[fold(z.name)]=z);
+  const get=n=>{const k=fold(n);if(!key[k]){const z={id:uid(),name:n,kind:"otro"};S.sires.push(z);key[k]=z}return"s:"+key[k].id};
+  [...(S.meta.sireList||[])].forEach(n=>{n=String(n||"").trim();if(n&&!byRef(n))get(n)});
+  S.animals.forEach(a=>{if(isSig(a.dad))a.dad=get(String(a.dad).trim())});
+  S.repro.forEach(r=>{if(isSig(r.bull))r.bull=get(String(r.bull).trim())});
+  if(!S.meta.seedCH&&fold((S.meta.prof||{}).name).includes("jesiah")){if(!S.sires.some(z=>fold(z.name)==="chorro humo"))S.sires.push({id:uid(),name:"Chorro Humo",kind:"finca",st:"Ya no está",note:"Semental que existió en la ganadería y dejó crías. Completá su información: raza, registro, fecha de nacimiento y sus padres."});S.meta.seedCH=true}
+  S.meta.sireList=[];S.meta.sireMig=true}
+const mine=(e,v)=>!!v&&(e.s?v==="s:"+e.s.id:(v==="id:"+e.a.id||(v===e.a.tag&&!dupTag(e.a.tag))));
+const svType=r=>r.stype||((r.detail||"").split(" · ")[0]==="Monta natural"?"Monta natural":"Inseminación");
+function sireStats(e){
+  const H=S.animals.filter(x=>mine(e,x.dad)),D=H.filter(x=>!isM(x.cat)),
+  SV=S.repro.filter(r=>r.type==="Servicio"&&mine(e,r.bull)),
+  res=SV.map(r=>{const d=S.repro.find(z=>z.id===r.dx);return d&&d.result==="Preñada"?"p":d&&d.result==="Vacía"?"v":"n"}),
+  pre=res.filter(x=>x==="p").length,vac=res.filter(x=>x==="v").length,
+  avs=D.map(x=>{const L=lactData(x);return L.ok.length?Math.max(...L.ok.map(r=>r.avg)):0}).filter(x=>x>0),
+  W=H.map(x=>{const w=S.weights.filter(z=>z.aid===x.id).sort((p,q)=>q.date.localeCompare(p.date))[0];return w?w.kg:0}).filter(x=>x>0);
+  return{H,h:D.length,m:H.length-D.length,live:H.filter(x=>x.status!=="baja").length,ord:D.filter(x=>x.cat==="Vaca en ordeñe"&&x.status!=="baja").length,
+  sv:SV.length,vacas:new Set(SV.map(r=>r.aid)).size,im:SV.filter(r=>svType(r)==="Inseminación").length,mn:SV.filter(r=>svType(r)==="Monta natural").length,
+  pre,vac,pend:SV.length-pre-vac,rate:pre+vac?Math.round(pre/(pre+vac)*100):null,spp:pre?Math.round((pre+vac)/pre*10)/10:null,
+  lac:avs.length?Math.round(avs.reduce((a,b)=>a+b,0)/avs.length*10)/10:null,nlac:avs.length,kg:W.length?Math.round(W.reduce((a,b)=>a+b,0)/W.length):null,nkg:W.length}}
+const sName=e=>e.s?e.s.name:"#"+e.a.tag+(e.a.name?" "+e.a.name:"");
+const sEnts=()=>[...[...S.sires].sort((a,b)=>a.name.localeCompare(b.name,"es")).map(s=>({s})),...S.animals.filter(a=>a.cat==="Toro").map(a=>({a}))];
+function sRows(s){const e={s},t=sireStats(e),I=[["Tipo",SK[s.kind||"otro"]],["Registro / arete",s.reg],["Raza",s.breed],["Aptitud",s.apt],["Pelaje / color",s.color],["Nació",s.born?fmt(s.born)+" ("+edad(s.born)+")":""],["Procedencia",s.origin],["Estado",(s.st||"")+(s.out?" · "+fmt(s.out):"")],["Madre",s.mom],["Padre",s.dad],["Casa comercial",s.house],["Código / lote",s.code]].filter(x=>x[1]);
+  const A=[["Hijos registrados",t.H.length+" ("+t.h+" hembras, "+t.m+" machos)"],["Hijos vivos en la finca",t.live],["Hijas en ordeñe",t.ord],["Mejor lactación promedio de sus hijas",t.lac!=null?t.lac+" gal/día ("+t.nlac+" hija"+(t.nlac>1?"s":"")+")":"sin leche registrada"],["Peso promedio de sus hijos",t.kg!=null?t.kg+" kg ("+t.nkg+" con peso)":"sin pesos"],["Servicios",t.sv+" ("+t.im+" inseminación, "+t.mn+" monta)"],["Vacas distintas servidas",t.vacas],["Preñadas / Vacías / Pendientes",t.pre+" / "+t.vac+" / "+t.pend],["Efectividad de preñez",t.rate!=null?t.rate+"%":"sin diagnósticos"],["Servicios por preñez",t.spp!=null?t.spp:"—"]];
+  return{I,A,t}}
+function fSires(){const R=[...S.sires].sort((a,b)=>a.name.localeCompare(b.name,"es")),A=S.animals.filter(a=>a.cat==="Toro");
+  const card=(e,id,at)=>{const t=sireStats(e);return `<div class="card" ${at}="${id}"><div class="row"><span class="b">${e.s?esc(e.s.name):"#"+esc(e.a.tag)+(e.a.name?" "+esc(e.a.name):"")}</span><span class="tag">${e.s?SK[e.s.kind||"otro"]:"En la finca"}</span></div><div class="mu">${e.s&&e.s.breed?esc(e.s.breed)+" · ":""}Hijos ${t.H.length} (${t.h} hembras, ${t.m} machos)${t.rate!=null?" · Preñez "+t.rate+"%":""}</div></div>`};
+  sheet(`<h1>🐂 Toros de referencia</h1><p class="mu">Padres y sementales que dejaron crías o se usaron en monta e inseminación. No cuentan en el inventario ni en la lista de animales.</p><button id="ns">➕ Agregar toro</button>
+  <h2>Registrados (${R.length})</h2>${R.map(z=>card({s:z},z.id,"data-sr")).join("")||'<p class="mu">Todavía no hay toros de referencia.</p>'}
+  ${A.length?`<h2>Toros que están en la finca (${A.length})</h2><p class="mu">Estos sí cuentan como animales. Se muestran aquí para comparar a sus hijos.</p>${A.map(a=>card({a},a.id,"data-sa")).join("")}`:""}
+  <br><button class="s" id="sc1">📄 Comparativo de toros (PDF)</button><br><br><button class="s" id="sc2">📊 Comparativo de toros (Excel)</button><br><br><button class="s" id="cx">Cerrar</button>`);
+  $("ns").onclick=()=>fSire();$("cx").onclick=close;$("sc1").onclick=pdfSires;$("sc2").onclick=xlsxSires;
+  document.querySelectorAll("[data-sr]").forEach(el=>el.onclick=()=>sireDetail(S.sires.find(z=>z.id===el.dataset.sr)));
+  document.querySelectorAll("[data-sa]").forEach(el=>el.onclick=()=>detail(byId(el.dataset.sa)))}
+function sireDetail(s){const X=sRows(s),t=X.t,H=[...t.H].sort((a,b)=>(b.born||"").localeCompare(a.born||""));
+  sheet(`${s.photo?`<img src="${s.photo}" style="width:100%;max-height:240px;object-fit:cover;border-radius:14px;margin-bottom:10px">`:""}<h1>🐂 ${esc(s.name)}</h1><p class="mu">${SK[s.kind||"otro"]}${s.breed?" · "+esc(s.breed):""}${s.reg?" · Reg. "+esc(s.reg):""}</p>
+  <div class="kg">${kpi("Hijos",t.H.length,t.h+" hembras · "+t.m+" machos")}${kpi("Efectividad de preñez",t.rate!=null?t.rate+"%":"—",t.sv?t.sv+" servicios":"sin servicios")}</div>
+  <h2>Datos del toro</h2><div class="card"><table class="rt">${X.I.map(r=>`<tr><td>${r[0]}</td><td>${esc(r[1])}</td></tr>`).join("")||'<tr><td>Todavía sin datos. Tocá Editar para completarlos.</td></tr>'}</table></div>
+  ${s.note?`<div class="card"><div class="mu">Características y notas</div><div>${esc(s.note)}</div></div>`:""}
+  <h2>Análisis de su descendencia</h2><div class="card"><table class="rt">${X.A.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table></div>
+  <h2>Hijos (${H.length})</h2>${H.map(a=>`<div class="card" data-h="${a.id}"><div class="row"><span class="b">${nm(a)}</span><span class="tag">${a.cat}</span></div><div class="mu">${isM(a.cat)?"Macho":"Hembra"}${a.born?" · Nació "+fmt(a.born):""}${a.status==="baja"?" · (baja)":""}</div></div>`).join("")||'<p class="mu">Todavía no hay hijos con este padre. Elegilo como padre al registrar o editar un animal.</p>'}
+  <button id="ed">Editar</button><br><br><button class="s" id="p1">📄 Hoja del toro (PDF)</button><br><br><button class="s" id="p2">📊 Hoja del toro (Excel)</button><br><br><button class="s" id="bk">Volver a la lista</button>`);
+  $("ed").onclick=()=>fSire(s);$("p1").onclick=()=>pdfSire(s);$("p2").onclick=()=>xlsxSire(s);$("bk").onclick=fSires;
+  document.querySelectorAll("[data-h]").forEach(el=>el.onclick=()=>detail(byId(el.dataset.h)))}
+function fSire(s){const nw=!s;s=s||{};let ph=s.photo||"";
+  sheet(`<h1>${nw?"Nuevo toro de referencia":"Editar toro"}</h1>
+  <label>Nombre *</label><input id="s_n" value="${esc(s.name)}" placeholder="Ej. Chorro Humo">
+  <label>Tipo</label><select id="s_k">${Object.entries(SK).map(([k,v])=>`<option value="${k}" ${k===(s.kind||"finca")?"selected":""}>${v}</option>`).join("")}</select>
+  <label>Registro / arete</label><input id="s_r" value="${esc(s.reg)}">
+  <label>Raza</label><input id="s_b" value="${esc(s.breed)}" placeholder="Ej. Brahman, Pardo Suizo, Gyr">
+  <label>Aptitud</label><select id="s_a"><option value="">— Sin dato —</option>${opts(SAP,s.apt)}</select>
+  <label>Pelaje / color</label><input id="s_c" value="${esc(s.color)}">
+  <label>Fecha de nacimiento</label><input type="date" id="s_d" value="${s.born||""}">
+  <label>Procedencia o criador</label><input id="s_o" value="${esc(s.origin)}">
+  <label>Estado</label><select id="s_s"><option value="">— Sin dato —</option>${opts(SST,s.st)}</select>
+  <label>Fecha en que murió o salió (si aplica)</label><input type="date" id="s_x" value="${s.out||""}">
+  <label>Madre del toro</label><input id="s_m" value="${esc(s.mom)}">
+  <label>Padre del toro</label><input id="s_p" value="${esc(s.dad)}">
+  <div id="s_pj"><label>Casa comercial (semen)</label><input id="s_h" value="${esc(s.house)}"><label>Código / lote de la pajuela</label><input id="s_l" value="${esc(s.code)}"></div>
+  <label>Características y notas</label><textarea id="s_t" rows="3" placeholder="Fortalezas, defectos, DEP, cómo salieron sus crías…">${esc(s.note)}</textarea>
+  <label>Foto</label><div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:10px"><img id="s_pv" class="ph" style="width:64px;height:64px;${ph?"":"display:none"}" src="${ph}"><input type="file" id="s_f" accept="image/*" style="margin:0"></div>
+  <button id="ok">Guardar</button><br><br>${nw?"":'<button class="d" id="del">Eliminar este toro</button><br><br>'}<button class="s" id="cx">Cancelar</button>`);
+  const pj=()=>$("s_pj").style.display=$("s_k").value==="pajuela"?"block":"none";$("s_k").onchange=pj;pj();
+  $("s_f").onchange=e=>{const f=e.target.files[0];if(f)shrink(f,d=>{ph=d;$("s_pv").src=d;$("s_pv").style.display="block"})};
+  const back=()=>nw?fSires():sireDetail(s);$("cx").onclick=back;
+  $("ok").onclick=()=>{const n=$("s_n").value.trim();if(!n)return alert("Falta el nombre del toro");if(S.sires.some(z=>z!==s&&fold(z.name)===fold(n)))return alert("Ya hay un toro con ese nombre");
+    const o={name:n,kind:$("s_k").value,reg:$("s_r").value.trim(),breed:$("s_b").value.trim(),apt:$("s_a").value,color:$("s_c").value.trim(),born:$("s_d").value,origin:$("s_o").value.trim(),st:$("s_s").value,out:$("s_x").value,mom:$("s_m").value.trim(),dad:$("s_p").value.trim(),house:$("s_h").value.trim(),code:$("s_l").value.trim(),note:$("s_t").value.trim(),photo:ph};
+    if(nw){s={id:uid()};Object.assign(s,o);S.sires.push(s)}else{const old=s.name;Object.assign(s,o);if(old!==n)S.repro.forEach(r=>{if(r.bull==="s:"+s.id&&r.detail)r.detail=r.detail.split(old).join(n)})}
+    save();render();sireDetail(s)};
+  if(!nw)$("del").onclick=()=>{if(!confirm("¿Eliminar este toro? Sus hijos y servicios conservarán el nombre escrito."))return;const ref="s:"+s.id;S.animals.forEach(a=>{if(a.dad===ref)a.dad=s.name});S.repro.forEach(r=>{if(r.bull===ref)r.bull=s.name});S.sires=S.sires.filter(z=>z!==s);S.meta.sireList=S.meta.sireList||[];save();render();fSires()}}
+function pdfSire(s){const X=sRows(s),t=X.t,x=[40,200],it=[...pdfHead("Hoja del toro de referencia")];
+  if(s.photo)it.push({img:s.photo,w:90});
+  it.push({c:[s.name],b:1,sz:15},...pdfSec("Datos del toro"));
+  X.I.forEach(r=>it.push({c:[r[0],String(r[1])],x,sz:9}));
+  if(s.note){it.push(...pdfSec("Características y notas"));String(s.note).split(/\n/).forEach(l=>{for(let i=0;i<l.length||i===0;i+=95)it.push({c:[l.slice(i,i+95)],sz:9})})}
+  it.push(...pdfSec("Análisis de su descendencia"));X.A.forEach(r=>it.push({c:[r[0],String(r[1])],x,sz:9}));
+  if(t.H.length){it.push({chart:geomBars([{l:"Hembras",v:[t.h]},{l:"Machos",v:[t.m]}],["#2f9d62"],515,130),keep:1});
+    const y=[40,100,200,260,330,420];it.push(...pdfSec("Hijos ("+t.H.length+")"),{c:["Arete","Nombre","Sexo","Categoría","Nacimiento","Estado"],x:y,b:1,sz:8,line:1},...[...t.H].sort((a,b)=>(b.born||"").localeCompare(a.born||"")).map(a=>({c:["#"+a.tag,a.name||"-",isM(a.cat)?"Macho":"Hembra",a.cat,a.born?fmt(a.born):"-",a.status==="baja"?"Baja":"En la finca"],x:y,sz:8})))}
+  it.push({c:["Efectividad de preñez = vacas preñadas / vacas con diagnóstico (preñada o vacía). Pendientes = servicios aún sin diagnóstico."],sz:7});
+  sharePDF("toro-"+fold(s.name).replace(/ /g,"-")+"-"+today()+".pdf",it)}
+function xlsxSire(s){const t=sireStats({s}),H=["Arete","Nombre","Sexo","Categoría","Nacimiento","Estado","Madre","Mejor lactación (gal/día)","Último peso (kg)"],R=[...t.H].sort((a,b)=>(b.born||"").localeCompare(a.born||"")).map(a=>{const L=isM(a.cat)?null:lactData(a),w=S.weights.filter(z=>z.aid===a.id).sort((p,q)=>q.date.localeCompare(p.date))[0],m=a.mom?pname(a.mom):"";return[a.tag,a.name||"",isM(a.cat)?"Macho":"Hembra",a.cat,a.born?{d:a.born}:"",a.status==="baja"?"Baja":"En la finca",m,L&&L.ok.length?Math.max(...L.ok.map(r=>r.avg)):"",w?w.kg:""]});
+  shareFile(new File([makeXlsx("Hijos de "+s.name.slice(0,18),H,R,[12,18,10,16,14,12,22,22,16])],"toro-"+fold(s.name).replace(/ /g,"-")+"-"+today()+".xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}))}
+function pdfSires(){const E=sEnts().map(e=>({e,t:sireStats(e)})),x=[40,185,230,268,306,360,420,475],
+  it=[...pdfHead("Comparativo de toros"),{c:["Toros de referencia: "+S.sires.length+"   ·   Toros en la finca: "+E.filter(r=>r.e.a).length],sz:9}];
+  if(!E.length)it.push({c:["Todavía no hay toros registrados."],sz:9});
+  else{it.push(...pdfSec("Resumen"),{c:["Toro","Hijos","Hemb.","Mach.","Servic.","Preñez %","Serv/preñez","Gal/día hijas"],x,b:1,sz:8,line:1},...E.map(r=>({c:[sName(r.e).slice(0,26),String(r.t.H.length),String(r.t.h),String(r.t.m),String(r.t.sv),r.t.rate!=null?String(r.t.rate):"-",r.t.spp!=null?String(r.t.spp):"-",r.t.lac!=null?String(r.t.lac):"-"],x,sz:8})),
+      {c:["Preñez % = preñadas / servicios con diagnóstico. Gal/día hijas = promedio de la mejor lactación de sus hijas con leche registrada."],sz:7});
+    const top=E.filter(r=>r.t.H.length).sort((a,b)=>b.t.H.length-a.t.H.length).slice(0,8);
+    if(top.length)it.push(...pdfSec("Hijos por toro"),{chart:geomBars(top.map(r=>({l:sName(r.e).slice(0,10),v:[r.t.H.length]})),["#2f9d62"],515,150),keep:1})}
+  sharePDF("comparativo-toros-"+today()+".pdf",it)}
+function xlsxSires(){const H=["Toro","Tipo","Raza","Registro","Aptitud","Estado","Hijos","Hijas","Hijos machos","Hijos vivos","Hijas en ordeñe","Mejor lactación prom. hijas (gal/día)","Peso prom. hijos (kg)","Servicios","Inseminaciones","Montas","Vacas distintas","Preñadas","Vacías","Pendientes","Efectividad de preñez %","Servicios por preñez"],
+  R=sEnts().map(e=>{const t=sireStats(e),z=e.s||{};return[sName(e),e.s?SK[z.kind||"otro"]:"En la finca",z.breed||e.a&&e.a.breed||"",z.reg||"",z.apt||"",e.s?z.st||"":(e.a.status==="baja"?"Baja":"Activo"),t.H.length,t.h,t.m,t.live,t.ord,t.lac!=null?t.lac:"",t.kg!=null?t.kg:"",t.sv,t.im,t.mn,t.vacas,t.pre,t.vac,t.pend,t.rate!=null?t.rate:"",t.spp!=null?t.spp:""]});
+  shareFile(new File([makeXlsx("Comparativo de toros",H,R,[24,16,14,12,12,12,8,8,12,11,13,18,14,10,13,9,13,10,8,11,16,14])],"comparativo-toros-"+today()+".xlsx",{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}))}
 function gdp(a){const W=S.weights.filter(w=>w.aid===a.id).sort((x,y)=>x.date.localeCompare(y.date));if(W.length<2)return"";const l=W[W.length-1],p=W[W.length-2],d=dd(l.date,p.date);return d>0?" · +"+(Math.round((l.kg-p.kg)/d*100)/100)+" kg/día":""}
 function fPeso(a,o){o=o||{};const w=o.w||{};
   sheet(`<h1>⚖️ Peso de ${nm(a)}</h1>${o.why?`<p class="mu">${o.why}</p>`:""}<label>Peso en kilos (kg)</label><input id="w_k" inputmode="decimal" placeholder="Ej. 180" value="${w.kg||""}"><label>Fecha</label><input type="date" id="w_d" value="${w.date||today()}"><label>Nota (opcional)</label><input id="w_n" value="${esc(w.note||o.note||"")}" placeholder="Ej. Pesado con cinta"><br><button id="ok">Guardar peso</button><br><br>${w.id?'<button class="d" id="del">Eliminar este peso</button><br><br>':""}<button class="s" id="cx">${o.why?"Omitir por ahora":"Cancelar"}</button>`);
@@ -994,6 +1093,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("[data-lic]")){showAct(true);return}
   if(e.target.closest("[data-an]")){fAnalisis();return}
   {const mn=e.target.closest("[data-mn]");if(mn){PZ.mn=PZ.mn===mn.dataset.mn?null:mn.dataset.mn;render();return}}
+  if(e.target.closest("[data-sires]")){fSires();return}
   if(e.target.closest("[data-qm]")){fQuick();return}
   {const q=e.target.closest("[data-qa]");if(q){const k=q.dataset.qa;({milk:()=>fQuick(),repro:()=>fRepro(),san:()=>fSan(),fin:()=>fFin(),animal:()=>fAnimal()})[k]();return}}
   {const q=e.target.closest("[data-fs]");if(q){const k=q.dataset.fs;({prof:()=>fProf(),animal:()=>fAnimal(),milk:()=>fQuick(),rep:()=>fRep()})[k]();return}}
