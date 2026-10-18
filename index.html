@@ -255,7 +255,7 @@ function render(){
   norm();{const th=S.meta.theme;if(th==="light"||th==="dark")document.documentElement.setAttribute("data-theme",th);else document.documentElement.removeAttribute("data-theme")}setIcon();$("gear").style.display=tab==="rebano"?"":"none";$("tags").innerHTML=S.animals.map(a=>`<option value="${esc(a.tag)}">${esc(a.name)}</option>`).join("");$("pots").innerHTML=potreros().map(p=>`<option value="${esc(p)}">`).join("");
   const NA=alerts().length;
   const tabs=[["rebano","establo","Rebaño"],["animales","vaca","Animales"],["sanidad","jeringa","Sanidad"],["repro","latido","Preñez"],["caja","billete","Caja"]];
-  $("nav").innerHTML=tabs.map(t=>`<a href="#" data-t="${t[0]}" class="${tab===t[0]?"on":""}"><b>${ic(t[1])}</b>${t[2]}${t[0]==="rebano"&&NA?` <span style="background:var(--wa);color:var(--pt);border-radius:9px;padding:0 6px;font-size:11px">${NA}</span>`:""}</a>`).join("");
+  $("nav").innerHTML=tabs.map(t=>`<a href="#" data-t="${t[0]}" class="${tab===t[0]?"on":""}"><b>${ic(t[1])}</b>${t[2]}</a>`).join("");
   $("fab").style.display=tab==="rebano"?"none":"";$("fab").textContent=tab==="rebano"?"+ Movimiento":tab==="animales"?"+ Animal":tab==="sanidad"?"+ Sanidad":tab==="repro"?"+ Evento":"+ Ingreso/Gasto";
   {const ent=lastTab!==tab;lastTab=tab;$("app").classList.remove("enter");$("app").innerHTML=UL(tab==="rebano"?vRebano():tab==="animales"?vAnimales():tab==="sanidad"?vSanidad():tab==="repro"?vRepro():vCaja());if(ent){void $("app").offsetWidth;$("app").classList.add("enter")}}
 }
