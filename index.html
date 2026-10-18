@@ -347,9 +347,10 @@ function vSanidad(){
   ${MNI("sp",["#6aa9e8","#2f6fb5","#1b4478","clock"],"Próximas aplicaciones",VA.length?VA.length+" en los próximos 30 días":"Nada pendiente en 30 días",`data-sec="sp"`,alHtml(VA,1)||'<p class="mu">No hay aplicaciones próximas.</p>',!!PZ.sp,VA.some(x=>x.r<=7))}
   ${MNI("sr",["#e58f5b","#b4531f","#7a3611","alert"],"En período de retiro",r.length?r.length+" animal"+(r.length>1?"es":"")+" · no enviar leche ni carne":"Ningún animal en retiro",`data-sec="sr"`,r.map(e=>`<div class="mr"><div class="row"><b>${nm(byId(e.aid))}</b><span class="mu">hasta ${fmt(until(e))}</span></div><div class="mu">${e.type}${e.product?" · "+esc(e.product):""}</div></div>`).join("")||'<p class="mu">Ningún animal en retiro.</p>',!!PZ.sr,r.length>0)}
   ${MNI("",["#3b8f6a","#1f5a43","#123226","file"],"Plan anual de vacunas","Programá y revisá las vacunas","data-plan")}
+  <div class="md"></div>
+  ${MNI("sh",["#8f7be0","#5b47b0","#33256e","clock"],"Historial",S.events.length?S.events.length+" registro"+(S.events.length>1?"s":"")+" · último "+fmt(l[0].date):"Sin registros sanitarios",`data-sec="sh"`,(l.map(ev).join("")||'<p class="mu">Sin registros sanitarios.</p>')+(S.events.length>l.length?`<p class="mu" style="margin:8px 0 0;text-align:center">Se muestran los últimos ${l.length} registros.</p>`:""),!!PZ.sh)}
   </div>`;
-  return `<h1>Sanidad</h1><div class="rts">${RT4(`data-sec="sp"`,"clock",["#6aa9e8","#2f6fb5","#1b4478"],"Próximas (30 días)",VA.length,VA.length?100:0)}${RT4(`data-sec="sr"`,"alert",["#f3c85a","#c79322","#7c5a10"],"En retiro",r.length,S.animals.length?Math.round(r.length/Math.max(1,act().length)*100):0)}${RT4("","shield",["#52c58a","#2a8a5a","#14553a"],"Aplicaciones (30 días)",n30,Math.min(100,n30*10))}${RT4("","file",["#f08bb2","#c23f78","#7a1f48"],"Registros totales",S.events.length,100)}</div>${menu}
-  <h2>Historial</h2>${l.map(ev).join("")||'<p class="mu">Sin registros sanitarios.</p>'}`;
+  return `<h1>Sanidad</h1><div class="rts">${RT4(`data-sec="sp"`,"clock",["#6aa9e8","#2f6fb5","#1b4478"],"Próximas (30 días)",VA.length,VA.length?100:0)}${RT4(`data-sec="sr"`,"alert",["#f3c85a","#c79322","#7c5a10"],"En retiro",r.length,S.animals.length?Math.round(r.length/Math.max(1,act().length)*100):0)}${RT4("","shield",["#52c58a","#2a8a5a","#14553a"],"Aplicaciones (30 días)",n30,Math.min(100,n30*10))}${RT4("","file",["#f08bb2","#c23f78","#7a1f48"],"Registros totales",S.events.length,100)}</div>${menu}`;
 }
 const GEST=290,FEM=["Vaca en ordeñe","Vaca seca","Vaquillona"];
 const fem=()=>act().filter(a=>FEM.includes(a.cat));
