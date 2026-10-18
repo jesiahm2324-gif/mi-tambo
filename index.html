@@ -463,9 +463,10 @@ function vCaja(){
   ${MNI("",["#3b8f6a","#1f5a43","#123226","file"],"Estado de resultados","Ingresos, gastos y resultado en PDF","data-er")}
   ${MNI("ci",["#52c58a","#2a8a5a","#14553a","up"],"Ingresos por rubro","Total: "+money(i),`data-sec="ci"`,`<button class="s" data-cp="ingreso" style="margin:6px 0 9px">📄 PDF de ingresos</button>`+(rows("ingreso","linear-gradient(90deg,#52c58a,#2a8a5a)")||'<p class="mu">Sin ingresos este mes.</p>'),!!PZ.ci)}
   ${MNI("cg",["#f08a6a","#d9483a","#7a1f14","down"],"Gastos por rubro","Total: "+money(g),`data-sec="cg"`,`<button class="s" data-cp="gasto" style="margin:6px 0 9px">📄 PDF de gastos</button>`+(rows("gasto","linear-gradient(90deg,#f3a07a,#d9483a)")||'<p class="mu">Sin gastos este mes.</p>'),!!PZ.cg)}
+  <div class="md"></div>
+  ${MNI("cm",["#8f7be0","#5b47b0","#33256e","receipt"],"Movimientos",L.length?L.length+" movimiento"+(L.length>1?"s":"")+" este mes":"Sin movimientos este mes",`data-sec="cm"`,(L.length?`<button class="s" data-cp="mov" style="margin:6px 0 9px">📄 PDF de movimientos</button>`:"")+(L.map(mv).join("")||'<p class="mu">Sin movimientos este mes.</p>'),!!PZ.cm)}
   </div>`;
-  return `<h1>Caja</h1>${hero}<div class="rts">${RT4(`data-sec="ci"`,"up",["#52c58a","#2a8a5a","#14553a"],"Ingresos ("+ni+")",money(i),tt?i/tt*100:0)}${RT4(`data-sec="cg"`,"down",["#f08a6a","#d9483a","#7a1f14"],"Gastos ("+ng+")",money(g),tt?g/tt*100:0)}</div>${menu}
-  <div class="row" style="margin:14px 0 8px"><h2 style="margin:0">Movimientos (${L.length})</h2>${L.length?`<button class="s" data-cp="mov" style="width:auto;padding:7px 14px;font-size:13.5px">📄 PDF</button>`:""}</div>${L.map(mv).join("")||'<p class="mu">Sin movimientos este mes.</p>'}`;
+  return `<h1>Caja</h1>${hero}<div class="rts">${RT4(`data-sec="ci"`,"up",["#52c58a","#2a8a5a","#14553a"],"Ingresos ("+ni+")",money(i),tt?i/tt*100:0)}${RT4(`data-sec="cg"`,"down",["#f08a6a","#d9483a","#7a1f14"],"Gastos ("+ng+")",money(g),tt?g/tt*100:0)}</div>${menu}`;
 }
 function fFin(f){f=f||{};
   sheet(`<h1>${f.id?"Editar":"Nuevo"} movimiento</h1>
