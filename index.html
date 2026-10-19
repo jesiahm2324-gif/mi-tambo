@@ -266,15 +266,26 @@ function alerts(){
   S.events.forEach(e=>{if(!e.next)return;const pr=(e.product||"").toLowerCase();if(PL.some(p=>p.name.trim().toLowerCase()===pr.trim()))return;
     if(S.events.some(x=>x!==e&&x.aid===e.aid&&x.type===e.type&&(x.product||"").toLowerCase()===pr&&x.date>e.date))return;
     const r=dd(e.next,t);if(r<=AD())L.push({k:"vac",r,i:"💉",t:e.type+(e.product?" · "+e.product:"")+": "+raw(byId(e.aid)),d:e.next,aid:e.aid})});
+  const hasOrd=act().some(a=>a.cat==="Vaca en ordeñe");
+  S.events.forEach(e=>{const u=until(e);if(!u||u<t)return;const an=byId(e.aid);if(!an||(!an.ALL&&an.status==="baja"))return;const r=dd(u,t),ord=an.ALL?hasOrd:an.cat==="Vaca en ordeñe";
+    L.push({k:ord?"lret":"ret",r,i:ord?"🥛":"🛡️",t:(ord?"Leche en retiro: ":"En retiro: ")+raw(an)+" ("+e.type+(e.product?" · "+e.product:"")+")",d:u,aid:an.ALL?null:e.aid,lb:"Hasta el ",m:r===0?"termina hoy":"faltan "+r+" d"})});
+  {const rec=milkDays(addD(t,-3),t).per,bas=milkDays(addD(t,-17),addD(t,-4)).per;
+   act().filter(a=>a.cat==="Vaca en ordeñe").forEach(a=>{const x=rec[a.id],y=bas[a.id];if(!x||!y||x.n<2||y.n<5)return;const ra=x.g/x.n,ba=y.g/y.n;if(ba<=0)return;const p=Math.round((1-ra/ba)*100);
+     if(p>=20)L.push({k:"baja",r:99,i:"📉",t:"Baja de leche: "+raw(a),d:t,aid:a.id,lb:"Últimos 3 días: ",m:"-"+p+"% vs. su promedio",nolb:1})})}
+  {const l=LIC||{};if(l.st==="ok"&&l.days!=null&&l.days<=15)L.push({k:"lic",r:l.days,i:"⏳",t:"Tu acceso vence "+(l.days<=0?"hoy":"en "+l.days+" días"),d:l.exp,lb:"Fecha: ",m:"Pedí tu código de renovación ›",lic:1})}
   return L.sort((a,b)=>a.r-b.r)}
+const alWarn=x=>x.k==="lret"||x.k==="ret"||x.k==="lic"||(x.r<=7&&x.k!=="serv"&&x.k!=="baja");
+const alUrg=x=>x.r<=7&&!["vacia","serv","ret","lret","baja","lic"].includes(x.k);
 function alHtml(L,nohead){
   if(!L.length)return "";
   const w=r=>r<0?"vencida hace "+(-r)+" d":r===0?"¡hoy!":"en "+r+" d";
-  return (nohead?"":`<h2>🔔 Alertas (${L.length})</h2>`)+L.map(x=>`<div class="card ${x.r<=7&&x.k!=="serv"?"warn":""}" ${x.aid&&x.aid!=="ALL"?`data-a="${x.aid}"`:""}><div class="b">${x.i} ${esc(x.t)}</div><div class="row" style="margin-top:3px"><span style="opacity:.8">${x.lb||(x.k==="vacia"?"Último parto: ":"")}${fmt(x.d)}</span><span>${x.m||w(x.r)}</span></div></div>`).join("")}
-const alCard=L=>{if(!L.length)return"";const n=k=>L.filter(x=>x.k===k).length,u=L.filter(x=>x.r<=7&&x.k!=="vacia"&&x.k!=="serv").length;
-  return `<div class="card ${u?"warn":""}" data-al><div class="row"><span class="b">🔔 Alertas (${L.length})</span><span>›</span></div><div class="mu" style="${u?"color:inherit;opacity:.9":""}">${[n("parto")?n("parto")+(n("parto")>1?" partos":" parto"):"",n("vac")?n("vac")+(n("vac")>1?" vacunas":" vacuna"):"",n("vacia")?n("vacia")+(n("vacia")>1?" vacías":" vacía"):"",n("celo")?n("celo")+(n("celo")>1?" celos":" celo"):"",n("diag")?n("diag")+(n("diag")>1?" diagnósticos":" diagnóstico"):"",n("seca")?n("seca")+(n("seca")>1?" para secar":" para secar"):"",n("serv")?n("serv")+(n("serv")>1?" para servicio":" para servicio"):""].filter(Boolean).join(" · ")}${u?" · "+u+(u>1?" urgentes":" urgente"):""}</div></div>`};
-function fAlertas(){const L=alerts(),G=[["parto","🐄 Partos próximos"],["celo","💗 Celo esperado"],["diag","🩺 Para diagnóstico de preñez"],["seca","🥛 Para secar"],["serv","📅 Listas para servicio"],["vac","💉 Vacunas y medicamentos"],["vacia","⚠️ Vacías sin preñez"]];
-  sheet(`<h1>🔔 Alertas (${L.length})</h1>${G.map(([k,t])=>{const l=L.filter(x=>x.k===k);return l.length?`<h2>${t} (${l.length})</h2>${alHtml(l,1)}`:""}).join("")||'<p class="mu">No hay alertas.</p>'}<br><button class="s" id="cx">Cerrar</button>`);$("cx").onclick=close}
+  return (nohead?"":`<h2>🔔 Alertas (${L.length})</h2>`)+L.map(x=>`<div class="card ${alWarn(x)?"warn":""}" ${x.lic?"data-lic":x.aid&&x.aid!=="ALL"?`data-a="${x.aid}"`:""}><div class="b">${x.i} ${esc(x.t)}</div><div class="row" style="margin-top:3px"><span style="opacity:.8">${x.nolb?x.lb:(x.lb||(x.k==="vacia"?"Último parto: ":""))+fmt(x.d)}</span><span>${x.m||w(x.r)}</span></div></div>`).join("")}
+const alCard=L=>{if(!L.length)return"";const n=k=>L.filter(x=>x.k===k).length,u=L.filter(alUrg).length;
+  return `<div class="card ${u?"warn":""}" data-al><div class="row"><span class="b">🔔 Alertas (${L.length})</span><span>›</span></div><div class="mu" style="${u?"color:inherit;opacity:.9":""}">${[n("parto")?n("parto")+(n("parto")>1?" partos":" parto"):"",n("vac")?n("vac")+(n("vac")>1?" vacunas":" vacuna"):"",n("vacia")?n("vacia")+(n("vacia")>1?" vacías":" vacía"):"",n("celo")?n("celo")+(n("celo")>1?" celos":" celo"):"",n("diag")?n("diag")+(n("diag")>1?" diagnósticos":" diagnóstico"):"",n("seca")?n("seca")+(n("seca")>1?" para secar":" para secar"):"",n("serv")?n("serv")+" para servicio":"",n("lret")?n("lret")+" leche en retiro":"",n("ret")?n("ret")+(n("ret")>1?" en retiro":" en retiro"):"",n("baja")?n("baja")+(n("baja")>1?" con baja de leche":" con baja de leche"):"",n("lic")?"acceso por vencer":""].filter(Boolean).join(" · ")}${u?" · "+u+(u>1?" urgentes":" urgente"):""}</div></div>`};
+const ALO={};
+function fAlertas(){const L=alerts(),G=[["lret","🥛 Leche en retiro (no enviar al tanque)"],["ret","🛡️ Animales en retiro"],["parto","🐄 Partos próximos"],["celo","💗 Celo esperado"],["diag","🩺 Para diagnóstico de preñez"],["seca","🥛 Para secar"],["serv","📅 Listas para servicio"],["vac","💉 Vacunas y medicamentos"],["vacia","⚠️ Vacías sin preñez"],["baja","📉 Baja de producción de leche"],["lic","⏳ Tu acceso"]];
+  sheet(`<h1>🔔 Alertas (${L.length})</h1>${G.map(([k,t])=>{const l=L.filter(x=>x.k===k);return l.length?`<h2 data-aq="${k}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"><span>${t} (${l.length})</span><span class="mc ${ALO[k]?"op":""}">${ic("chev")}</span></h2><div id="aqb-${k}" style="display:${ALO[k]?"block":"none"}">${alHtml(l,1)}</div>`:""}).join("")||'<p class="mu">No hay alertas.</p>'}<br><button class="s" id="cx">Cerrar</button>`);
+  document.querySelectorAll("[data-aq]").forEach(h=>h.onclick=()=>{const k=h.dataset.aq,o=!ALO[k];ALO[k]=o;$("aqb-"+k).style.display=o?"block":"none";h.querySelector(".mc").classList.toggle("op",o)});$("cx").onclick=close}
 function setIcon(){const l=$("ati"),lg=(S.meta.prof||{}).logo||"icon-180.png";if(l&&l.getAttribute("href")!==lg)l.setAttribute("href",lg)}
 function render(){
   norm();{const th=S.meta.theme;if(th==="light"||th==="dark")document.documentElement.setAttribute("data-theme",th);else document.documentElement.removeAttribute("data-theme")}setIcon();$("gear").style.display=tab==="rebano"?"":"none";$("tags").innerHTML=S.animals.map(a=>`<option value="${esc(a.tag)}">${esc(a.name)}</option>`).join("");$("pots").innerHTML=potreros().map(p=>`<option value="${esc(p)}">`).join("");
@@ -308,7 +319,7 @@ function lhRes(tb,v7,avg){const t=today(),o=!!S.meta.lhOpen,ms=t.slice(0,8)+"01"
   ${nd?`<div class="lsub">Promedio diario del mes <b>${G(mTot/nd)}</b>${best?` · Mejor día <b>${fmt(best[0])}</b> (${G(best[1])})`:""}</div>`:""}
   <div class="lh2">Ordeño de mañana vs tarde (mes)</div><div class="lap"><i style="width:${pa}%"></i></div><div class="lapl"><span>☀️ Mañana ${G(am)} · ${pa}%</span><span>🌙 Tarde ${G(pm)} · ${ap?100-pa:0}%</span></div>
   <div class="lh2">Producción por vaca (mes)</div>${cows}</div>`}
-const qaRow=()=>{const L=alerts(),u=L.filter(x=>x.r<=7&&x.k!=="vacia"&&x.k!=="serv").length,mo=!!S.meta.mnOpen;
+const qaRow=()=>{const L=alerts(),u=L.filter(alUrg).length,mo=!!S.meta.mnOpen;
   const B=(att,icn,lab,c1,c2,c3,bd,cl)=>`<button class="qb ${cl||""}" ${att}><span class="qi" style="--c1:${c1};--c2:${c2};--c3:${c3}">${icn}</span>${lab}${bd}</button>`;
   return `<div class="qa">${B('data-qa="milk"',ic("botella"),"Leche","#6aa9e8","#2f6fb5","#1b4478","")}${B('data-qa="repro"',ic("calev"),"Evento","#e0709a","#b0376a","#6e1d40","")}${B('data-qa="mov"',ic("swap"),"Mov.","#8f7be0","#5b47b0","#33256e","")}${B('data-al',ic("campana"),"Alertas","#e58f5b","#b4531f","#7a3611",L.length?`<em class="qn ${u?"u":""}">${L.length}</em>`:"")}${B('data-mnh',ic("grid"),"Más rebaño","#e0b955","#a8832f","#6b5218","",mo?"on":"")}</div>`};
 function fsCard(){if(S.meta.fsHide)return"";const p=P(),st=[["Poné el nombre de tu finca",!!(p.name||p.logo),"prof"],["Agregá tu primer animal",act().length>0,"animal"],["Registrá el ordeño de hoy",S.milk.length>0,"milk"],["Hacé tu primer respaldo",!!S.meta.lastBackup,"rep"]],n=st.filter(x=>x[1]).length;if(n===4)return"";
@@ -351,7 +362,7 @@ function vRebano(){
   ${MNI("",["#3b8f6a","#1f5a43","#123226","file"],"Reportes y respaldo",lb?"Respaldo: "+fmt(lb):"Sin respaldo aún","data-rep",0,0,old)}
   ${MNI("",["#e58f5b","#b4531f","#7a3611","tool"],"Herramientas",S.tools.length+" registradas","data-tools")}
   </div>`:""}`;
-  return `${hdr()}${lhCard()}${qaRow()}${menu}${licWarn()}${fsCard()}`;
+  return `${hdr()}${lhCard()}${qaRow()}${menu}${fsCard()}`;
 }
 function vAnimales(){
   const all=animAll(),l=all.slice(0,aLim),tot=act(),cnt={};tot.forEach(x=>cnt[x.cat]=(cnt[x.cat]||0)+1);
@@ -711,7 +722,7 @@ function pdfInforme(M){const R=analysis(M),r=R.repro,l=R.leche,f=R.fin,A=act(),c
   ...pdfSec("Reproducción"),row("Hembras en el hato",r.n),row("Preñadas",r.pre+" ("+r.pct+"%)"),row("Servidas sin diagnóstico",r.srv),row("Vacías",r.vac),row("Paridas",r.par),row("Partos del mes",r.partos),row("Servicios del mes",r.serv),row("Preñeces confirmadas en el mes",r.conf),row("Intervalo promedio entre partos",r.ivm?r.ivm.toFixed(1)+" meses":"sin datos"),row("Vacías largas sin preñez",r.vl),{chart:r.ch,keep:1},
   ...pdfSec("Producción de leche"),row("Total del mes",fmtMilk(l.cur)),row("Promedio diario",fmtMilk(l.avg)),row("Mes anterior",fmtMilk(l.prev)),...(l.top.length?[{c:["Mejores vacas del mes"],b:1,sz:9},...l.top.map(x=>row("   "+nm(x.a),fmtMilk(x.g)))]:[]),{chart:l.ch,keep:1},
   ...pdfSec("Finanzas del mes"),row("Ingresos",money(f.ing)),row("Gastos",money(f.gas)),row(f.net>=0?"Utilidad":"Pérdida",money(f.net)),...f.gcat.map(x=>row("   Gasto: "+x[0],money(x[1]))),{chart:f.ch,keep:1},
-  ...pdfSec("Plan de vacunas y alertas"),...(alerts().length?alerts().slice(0,25).map(x=>({c:[(x.t||"").replace(/[^\x20-\x7e\xa0-\xff]/g,"")+" ",x.k==="vacia"?"Vacía":fmt(x.d)],x:[40,400],sz:9})):[{c:["Sin alertas pendientes"],sz:9}])];
+  ...pdfSec("Plan de vacunas y alertas"),...(alerts().filter(x=>x.k!=="lic"&&x.k!=="baja").length?alerts().filter(x=>x.k!=="lic"&&x.k!=="baja").slice(0,25).map(x=>({c:[(x.t||"").replace(/[^\x20-\x7e\xa0-\xff]/g,"")+" ",x.k==="vacia"?"Vacía":fmt(x.d)],x:[40,400],sz:9})):[{c:["Sin alertas pendientes"],sz:9}])];
   sharePDF("informe-"+M+".pdf",it)}
 
 /* ===== Licencia / activación ===== */
