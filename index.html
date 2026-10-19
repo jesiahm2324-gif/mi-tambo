@@ -563,17 +563,20 @@ function repData(per,full){
   return o}
 const secH=z=>z.map(x=>`<h2>${x.h}</h2><table class="rt">${x.r.map(r=>`<tr><td style="white-space:pre-wrap">${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join("")}</table>`).join("");
 const secT=z=>z.map(x=>x.h.toUpperCase()+"\n"+x.r.map(r=>r[0]+": "+r[1]).join("\n")).join("\n\n");
+const RPO={};
+const rqH=(k,t,b)=>`<h2 data-rq="${k}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"><span>${t}</span><span class="mc ${RPO[k]?"op":""}">${ic("chev")}</span></h2><div id="rqb-${k}" style="display:${RPO[k]?"block":"none"}">${b}</div>`;
+const secHA=z=>z.map((x,i)=>rqH("s"+i,x.h,`<table class="rt">${x.r.map(r=>`<tr><td style="white-space:pre-wrap">${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join("")}</table>`)).join("");
 function fRep(per){per=per||"mes";
   sheet(`<h1>Reportes y respaldo</h1>
   <label>Período del reporte</label><select id="rper">${Object.entries(PER).map(([k,v])=>`<option value="${k}" ${k===per?"selected":""}>${v}</option>`).join("")}</select>
-  ${secH(repData(per))}<br>
-  <button id="r1">📄 Guardar reporte (PDF)</button><br><br><button class="s" id="r2">Copiar reporte como texto</button>
-  <h2>Respaldo de todos tus datos</h2>
-  <p class="mu">Descargá el respaldo seguido y guardalo en la app Archivos (iCloud Drive). Con ese archivo recuperás todo el historial en cualquier teléfono.</p>
+  <button id="r1" style="margin-top:12px">📄 Guardar reporte (PDF)</button><br><br><button class="s" id="r2">Copiar reporte como texto</button>
+  ${secHA(repData(per))}
+  ${rqH("bk","Respaldo de todos tus datos",`<p class="mu">Descargá el respaldo seguido y guardalo en la app Archivos (iCloud Drive). Con ese archivo recuperás todo el historial en cualquier teléfono.</p>
   <button id="b1">Descargar respaldo (.json)</button><br><br><button class="s" id="b5">📄 Respaldo en PDF (también restaurable)</button><br><br>
   <label>Restaurar desde archivo de respaldo</label><input type="file" id="b2" accept=".json,.pdf,application/json,application/pdf">
-  <label>…o pegá el texto del respaldo</label><textarea id="b3" rows="2"></textarea><button class="s" id="b4">Restaurar desde texto</button><br><br>
+  <label>…o pegá el texto del respaldo</label><textarea id="b3" rows="2"></textarea><button class="s" id="b4">Restaurar desde texto</button>`)}<br>
   <button class="s" id="cx">Cerrar</button>`);
+  document.querySelectorAll("[data-rq]").forEach(h=>h.onclick=()=>{const k=h.dataset.rq,o=!RPO[k];RPO[k]=o;$("rqb-"+k).style.display=o?"block":"none";h.querySelector(".mc").classList.toggle("op",o)});
   $("rper").onchange=e=>fRep(e.target.value);
   const t=today(),title="Reporte Mi Tambo · "+PER[per]+" · "+fmt(t);
   const dlSave=async(name,data,ok)=>{const f=new File([data],name,{type:name.endsWith(".json")?"application/json":"text/html"});
