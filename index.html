@@ -870,7 +870,9 @@ function pdfOwner(ids){const O={},n=CG.length+1;act().filter(a=>!ids||ids.has(a.
   const x=[40,140,190,255,310,365,420,465,515],H={c:["Potrero","Vacas","Vaquill.","Novillos","Terneras","Terneros","Toros","Otros","Total"],x,b:1,sz:8,line:1},G=Array(n).fill(0);
   const it=[...pdfHead("Animales por dueño, categoría y potrero"+(ids?" (selección)":""))];
   Object.keys(O).sort().forEach(o=>{const T=Array(n).fill(0);it.push(...pdfSec(o),H);Object.keys(O[o]).sort().forEach(p=>{const r=O[o][p];r.forEach((v,i)=>{T[i]+=v;G[i]+=v});it.push({c:[p,...r,r.reduce((u,v)=>u+v,0)].map(String),x,sz:8})});it.push({c:["Total "+o,...T,T.reduce((u,v)=>u+v,0)].map(String),x,b:1,sz:8,line:1})});
-  it.push(...pdfSec("Total general"),H,{c:["Todos",...G,G.reduce((u,v)=>u+v,0)].map(String),x,b:1,sz:8});
+  {const P={};Object.keys(O).forEach(o=>Object.keys(O[o]).forEach(p=>{P[p]=P[p]||Array(n).fill(0);O[o][p].forEach((v,i)=>P[p][i]+=v)}));
+   const ks=Object.keys(P).sort((u,v)=>u==="Sin potrero"?1:v==="Sin potrero"?-1:u.localeCompare(v,"es"));
+   it.push(...pdfSec("Resumen general por potrero"),{c:["Todos los dueños juntos · cantidad de animales en cada potrero"],sz:8},H,...ks.map(p=>({c:[p,...P[p],P[p].reduce((u,v)=>u+v,0)].map(String),x,sz:8})),{c:["Total general",...G,G.reduce((u,v)=>u+v,0)].map(String),x,b:1,sz:8,line:1})}
   sharePDF("animales-por-dueno-"+today()+".pdf",it)}
 function pdfSinArete(){const A=act().filter(a=>isSN(a.tag)||!String(a.tag||"").trim()).sort(byAge),O={};A.forEach(a=>{const o=a.owner||"Sin dueño",p=a.pot||"Sin potrero";(O[o]=O[o]||{});(O[o][p]=O[o][p]||[]).push(a)});
   const x=[40,150,240,285,365,450],H={c:["Nombre","Categoría","Sexo","Edad","Raza","Madre"],x,b:1,sz:8,line:1},it=[...pdfHead("Animales sin arete (SN)"),{c:["Total sin arete: "+A.length+" · ordenados de mayor a menor edad"],b:1,sz:9}];
