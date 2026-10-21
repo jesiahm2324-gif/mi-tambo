@@ -576,7 +576,7 @@ function fRep(per){per=per||"mes";
   <label>Período del reporte</label><select id="rper">${Object.entries(PER).map(([k,v])=>`<option value="${k}" ${k===per?"selected":""}>${v}</option>`).join("")}</select>
   <button id="r1" style="margin-top:12px">📄 Guardar reporte (PDF)</button><br><br><button class="s" id="r2">Copiar reporte como texto</button>
   ${secHA(repData(per))}
-  ${rqH("bk","Respaldo de todos tus datos",`<p class="mu">Descargá el respaldo seguido y guardalo en la app Archivos (iCloud Drive). Con ese archivo recuperás todo el historial en cualquier teléfono.</p>
+  ${rqH("bk","Respaldo de todos tus datos",`<p class="mu">Descargá el respaldo seguido y guardalo fuera del teléfono: ${/iPhone|iPad|iPod/.test(navigator.userAgent)?"en iPhone, en la app Archivos (iCloud Drive)":"en Android, en la carpeta Descargas y una copia en Google Drive"}. También podés enviártelo por correo o WhatsApp. Con ese archivo recuperás todo el historial en cualquier teléfono.</p>
   <button id="b1">Descargar respaldo (.json)</button><br><br><button class="s" id="b5">📄 Respaldo en PDF (también restaurable)</button><br><br>
   <label>Restaurar desde archivo de respaldo</label><input type="file" id="b2" accept=".json,.pdf,application/json,application/pdf">
   <label>…o pegá el texto del respaldo</label><textarea id="b3" rows="2"></textarea><button class="s" id="b4">Restaurar desde texto</button>`)}<br>
