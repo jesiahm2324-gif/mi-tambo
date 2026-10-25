@@ -898,10 +898,10 @@ function pdfDescarte(){const t=today(),V=act().filter(a=>["Vaca en ordeñe","Vac
   const now=X.filter(isNow).sort((p,q)=>(p.a.born||"9").localeCompare(q.a.born||"9")),obs=X.filter(isObs),soon=X.filter(r=>r.i.soon&&!isNow(r)&&!isObs(r));
   const x=[40,92,160,200,255,330,400,470],H={c:["Arete","Nombre","Edad","Partos","Último parto","Estado","Potrero","Dueño"],x,b:1,sz:8,line:1},crit=[y?y+" años":"",pp?pp+" partos":""].filter(Boolean).join(DM()==="all"?" y ":" o ")||"sin criterio";
   const wrap=(tx,n)=>{const w=String(tx).split(" "),L=[];let c="";w.forEach(q=>{if((c+" "+q).trim().length>n){L.push(c);c=q}else c=(c+" "+q).trim()});if(c)L.push(c);return L};
-  const rows=(L,none)=>L.length?L.flatMap(r=>{const a=r.a,P=births(a),l=P[P.length-1],m=mot(r);return[{c:[a.tag,a.name,a.born?edadC(a.born):"-",String(P.length),l?fmt(l):"-",rs(a.id).st,a.pot,a.owner],x,sz:8},...wrap("Motivo: "+(m||"-"),110).map(z=>({c:[z],sz:7.5}))]}):[{c:[none],sz:9}];
-  sharePDF("vacas-descarte-"+t+".pdf",[...pdfHead("Vacas para descarte: "+crit+" y evaluación"),...pdfSec("Para descarte ("+now.length+")"),H,...rows(now,"Ninguna vaca cumple la condición"),
-    ...pdfSec("En observación ("+obs.length+")"),...(obs.length?[H]:[]),...rows(obs,"Ninguna"),
-    ...pdfSec("Próximas a descarte ("+soon.length+")"),...(soon.length?[H]:[]),...rows(soon,"Ninguna"),
+  const rows=(L,none)=>L.length?L.flatMap(r=>{const a=r.a,P=births(a),l=P[P.length-1],m=wrap("Motivo: "+(mot(r)||"-"),100),dt=[P.length+(P.length===1?" parto":" partos"),l?"último "+fmt(l):"",rs(a.id).st,a.pot?"Potrero "+a.pot:"",a.owner?"Dueño: "+a.owner:""].filter(Boolean).join("  ·  ");return[{c:[(a.name||"Sin nombre")+"   #"+a.tag,a.born?edadC(a.born):"-"],x:[40,440],b:1,sz:11},{c:[dt],sz:8},...m.map((z,k)=>({c:[z],sz:9,line:k===m.length-1}))]}):[{c:[none],sz:9}];
+  sharePDF("vacas-descarte-"+t+".pdf",[...pdfHead("Vacas para descarte: "+crit+" y evaluación"),...pdfSec("Para descarte ("+now.length+")"),...rows(now,"Ninguna vaca cumple la condición"),
+    ...pdfSec("En observación ("+obs.length+")"),...rows(obs,"Ninguna"),
+    ...pdfSec("Próximas a descarte ("+soon.length+")"),...rows(soon,"Ninguna"),
     ...(sin?[{c:[sin+" vaca(s) sin fecha de nacimiento no se pueden evaluar por edad."],sz:8}]:[])])}
 function pdfTools(){const T=[...S.tools].sort((a,b)=>a.name.localeCompare(b.name,"es")),x=[40,130,225,315,340,405,475],v=T.reduce((a,t)=>a+(t.value||0)*(t.qty||1),0);
   sharePDF("herramientas-"+today()+".pdf",[...pdfHead("Reporte de herramientas de la finca"),{c:["Herramienta","Tipo","N.º de serie","Cant.","Estado","Responsable","Ubicación"],x,b:1,sz:8,line:1},
