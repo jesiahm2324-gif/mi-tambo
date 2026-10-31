@@ -1424,7 +1424,7 @@ document.addEventListener("click",e=>{
   const v=e.target.closest("[data-e]");if(v){fSan(S.events.find(x=>x.id===v.dataset.e));return}
   if(e.target.closest("[data-plan]")){fPlan();return}
   if(e.target.id==="sh")close()});
-document.addEventListener("input",e=>{if(e.target.id==="q"){q=e.target.value;aLim=50;const p=e.target.selectionStart;render();const i=$("q");i.focus();i.setSelectionRange(p,p)}});
+document.addEventListener("input",e=>{if(e.target.id==="q"){q=e.target.value;aLim=50;if(tab==="animales"){const app=$("app"),t=document.createElement("div");t.innerHTML=UL(vAnimales());const o=[...app.children],nw=[...t.children],ix=o.findIndex(c=>c.contains(e.target));if(ix>=0&&ix<nw.length&&nw[ix].querySelector("#q")){o.slice(ix+1).forEach(c=>c.remove());nw.slice(ix+1).forEach(c=>app.appendChild(c));return}}const p=e.target.selectionStart;render();const i=$("q");i.focus();i.setSelectionRange(p,p)}});
 $("gear").onclick=fSet;$("fab").onclick=()=>tab==="rebano"?fMov():tab==="animales"?fAnimal():tab==="sanidad"?fSan():tab==="repro"?fRepro():fFin();
 (async()=>{try{const v=await idbGet();if(v)S=JSON.parse(v);else{const r=localStorage.getItem("tambo");if(r){S=JSON.parse(r);save()}}}catch(e){}
   norm();if(await licInit())render();else showAct();
