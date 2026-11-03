@@ -608,10 +608,13 @@ function fCajaCfg(){const A=CU()||[{id:"c",name:"Cuenta en córdobas",cur:cfg().
   <label>Saldo inicial en dólares (US$)</label><input id="k_s2" inputmode="decimal" value="${A[1].ini||""}" placeholder="0.00">
   <label>Tasa de referencia (córdobas por cada dólar)</label><input id="k_t" inputmode="decimal" value="${S.meta.tasa||""}" placeholder="Ej. 36.62">
   <p class="mu">La tasa se usa solo para el total aproximado y los informes generales. Cada cambio de moneda guarda su propia tasa.</p>
-  <button id="ok">Guardar</button><br><br>${on?'<button class="d" id="off">Dejar de controlar saldos</button><br><br>':""}<button class="s" id="cx">Cancelar</button>`);
+  <button id="ok">Guardar</button><br><br>${on?'<button class="d" id="old">🗑 Borrar movimientos anteriores al saldo inicial</button><br><br><button class="d" id="off">Dejar de controlar saldos</button><br><br>':""}<button class="s" id="cx">Cancelar</button>`);
   $("ok").onclick=()=>{const s1=numP($("k_s1").value||0),s2=numP($("k_s2").value||0),t=numP($("k_t").value||0),d=$("k_d").value;
     if(!d)return alert("Elegí la fecha del saldo inicial");if(isNaN(s1)||isNaN(s2))return alert("Revisá los saldos: escribí solo números");if(!(t>0))return alert("Escribí la tasa de referencia, por ejemplo 36.62");
     S.meta.cajaIni=d;S.meta.tasa=t;S.meta.cuentas=[{id:"c",name:$("k_n1").value.trim()||"Cuenta en córdobas",cur:A[0].cur,ini:s1},{id:"u",name:$("k_n2").value.trim()||"Cuenta en dólares",cur:"US$",ini:s2}];fm=d.slice(0,7)>today().slice(0,7)?fm:(fm<d.slice(0,7)?d.slice(0,7):fm);save();close();render()};
+  if(on)$("old").onclick=()=>{const d=S.meta.cajaIni,a=S.fin.filter(f=>f.date<d),b=(S.fx||[]).filter(x=>x.date<d);
+    if(!a.length&&!b.length)return alert("No hay movimientos anteriores al "+fmt(d)+".");
+    if(confirm("Se van a borrar "+a.length+" ingresos/gastos y "+b.length+" cambios de moneda anteriores al "+fmt(d)+". Esto no se puede deshacer. ¿Continuar?")){S.fin=S.fin.filter(f=>f.date>=d);S.fx=(S.fx||[]).filter(x=>x.date>=d);save();close();render()}};
   if(on)$("off").onclick=()=>{if(confirm("La Caja volverá a mostrarse como antes, con una sola moneda. Tus movimientos no se borran. ¿Continuar?")){delete S.meta.cuentas;save();close();render()}};
   $("cx").onclick=close}
 function fFx(x){x=x||{};const A=CU();if(!A)return fCajaCfg();let man=!!x.id;
