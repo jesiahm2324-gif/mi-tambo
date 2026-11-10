@@ -284,7 +284,7 @@ const MOV=["Nacimiento","Compra","Venta","Muerte"];
 let aLim=50,aRep=false,PZ={},selMode=false,SEL=new Set();
 const PAL=["#2fb36f","#3b8ee0","#e0a41f","#e0558c","#f07c33","#8a6fe0","#1fb5a8","#e0604f"],catCol=k=>PAL[(Math.max(0,CATS.indexOf(k)))%PAL.length];let aCat="",lastTab="";
 const animAll=()=>act().filter(a=>(!aCat||a.cat===aCat)&&(a.tag+" "+a.name+" "+a.cat+" "+(a.owner||"")).toLowerCase().includes(q.toLowerCase())).sort(byAge);let S={animals:[],events:[],moves:[]},tab="rebano",q="";
-const norm=()=>{S.animals=S.animals||[];S.fx=S.fx||[];{const key=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase().replace(/\s+/g," "),cm={};S.animals.forEach(a=>{if(a.owner){const k=key(a.owner);if(!cm[k])cm[k]=a.owner}});S.animals.forEach(a=>{if(a.owner)a.owner=cm[key(a.owner)]})}S.animals=S.animals||[];S.events=S.events||[];S.moves=S.moves||[];S.repro=S.repro||[];S.fin=S.fin||[];S.meta=S.meta||{};S.tools=S.tools||[];S.milk=S.milk||[];S.potlog=S.potlog||[];S.weights=S.weights||[];S.cond=S.cond||[];S.evals=S.evals||[];S.sires=S.sires||[];try{sireMig()}catch(e){}try{gestMig()}catch(e){}CATS.length=0;CATS.push(...CAT0,...(S.meta.catList||[]).map(c=>c.name));if(!S.meta.milkGal){const f=cfg().unit==="gal"?(+cfg().gl||4):3.785;S.milk.forEach(m=>{m.l=Math.round(m.l/f*10)/10});S.meta.milkGal=true}linkPairs()};
+const norm=()=>{S.animals=S.animals||[];S.notes=S.notes||[];S.fx=S.fx||[];{const key=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase().replace(/\s+/g," "),cm={};S.animals.forEach(a=>{if(a.owner){const k=key(a.owner);if(!cm[k])cm[k]=a.owner}});S.animals.forEach(a=>{if(a.owner)a.owner=cm[key(a.owner)]})}S.animals=S.animals||[];S.events=S.events||[];S.moves=S.moves||[];S.repro=S.repro||[];S.fin=S.fin||[];S.meta=S.meta||{};S.tools=S.tools||[];S.milk=S.milk||[];S.potlog=S.potlog||[];S.weights=S.weights||[];S.cond=S.cond||[];S.evals=S.evals||[];S.sires=S.sires||[];try{sireMig()}catch(e){}try{gestMig()}catch(e){}CATS.length=0;CATS.push(...CAT0,...(S.meta.catList||[]).map(c=>c.name));if(!S.meta.milkGal){const f=cfg().unit==="gal"?(+cfg().gl||4):3.785;S.milk.forEach(m=>{m.l=Math.round(m.l/f*10)/10});S.meta.milkGal=true}linkPairs()};
 const IDB=()=>new Promise((res,rej)=>{const r=indexedDB.open("mitambo",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const idbGet=async()=>{const d=await IDB();return new Promise((res,rej)=>{const q=d.transaction("kv").objectStore("kv").get("S");q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
 const idbSet=async v=>{const d=await IDB();return new Promise((res,rej)=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,"S");t.oncomplete=res;t.onerror=()=>rej(t.error)})};
@@ -405,6 +405,7 @@ function vRebano(){
   const bRep=`<div class="rg"><div><b>${R.pre}</b>Preñadas</div><div><b>${R.ser}</b>Servidas</div><div><b>${R.par}</b>Paridas</div><div><b>${R.vac}</b>Vacías</div></div><p class="mu" style="margin:8px 0 0">De ${F.length} hembras (vacas y vaquillonas).</p>`;
   const bRet=ret.map(e=>`<div class="mr"><div class="row"><b>${nm(byId(e.aid))}</b><span class="mu">hasta ${fmt(until(e))}</span></div><div class="mu">${e.type}${e.product?" · "+esc(e.product):""}</div></div>`).join("")||'<p class="mu">Ningún animal en retiro.</p>';
   const mo=!!S.meta.mnOpen,menu=`${mo?`<div class="card mn">
+  ${MNI("nt",["#f3c85a","#c79322","#7c5a10","receipt"],"Notas",S.notes.length?S.notes.length+" nota"+(S.notes.length>1?"s":"")+(S.notes.some(n=>n.pin)?" · "+S.notes.filter(n=>n.pin).length+" fijada"+(S.notes.filter(n=>n.pin).length>1?"s":"")+" ⭐":""):"Guardá tus notas importantes","data-nts")}
   ${MNI("inv",["#3b8f6a","#1f5a43","#123226","file"],"Inventario del mes","Inicial "+inv[0][1]+" · Final "+inv[5][1],"",bInv,o==="inv")}
   ${MNI("mov",["#6aa9e8","#2f6fb5","#1b4478","tag"],"Últimos movimientos",m[0]?m[0].type+" · #"+esc(m[0].tag)+" · "+fmt(m[0].date):"Sin movimientos todavía","",bMov,o==="mov")}
   ${MNI("rep",["#e0709a","#b0376a","#6e1d40","heart"],"Estado reproductivo",R.pre+" preñadas · "+R.ser+" servidas","",bRep,o==="rep")}
@@ -1003,6 +1004,27 @@ function pdfBackup(ok){const j=JSON.stringify({app:"mi-tambo",v:1,date:new Date(
   sharePDF("respaldo-tambo-"+today()+".pdf",[...pdfHead("Respaldo completo"),{c:["Este PDF contiene una copia restaurable de todos los datos."],sz:9},...secItems(repData("all",1))],btoa(unescape(encodeURIComponent(j))),ok)}
 const potreros=()=>[...new Set(act().map(a=>a.pot).filter(Boolean))].sort();
 function setPot(a,to,d){if((a.pot||"")===to)return;S.potlog.push({id:uid(),aid:a.id,date:d,from:a.pot||"",to});a.pot=to}
+const NTAGS=["Finca","Dinero","Sanidad","Otro"];
+function fNotas(){const L=[...S.notes].sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||b.date.localeCompare(a.date)||0);
+  const item=n=>`<div class="card sv" data-nid="${n.id}" data-t="${esc(n.tag||"")}" data-s="${esc(((n.title||"")+" "+(n.text||"")).toLowerCase())}"><span class="mg" style="--c1:${n.pin?"#f3c85a":"#8f7be0"};--c2:${n.pin?"#c79322":"#5b47b0"};--c3:${n.pin?"#7c5a10":"#33256e"}">${ic("receipt")}</span><div class="sx"><div class="row"><span class="b">${esc(n.title||"Sin título")}</span><span data-npin="${n.id}" style="font-size:22px;padding:0 4px" aria-label="Fijar nota">${n.pin?"⭐":"☆"}</span></div>${n.text?`<div class="mu" style="white-space:pre-wrap">${esc(n.text.length>140?n.text.slice(0,140)+"…":n.text)}</div>`:""}<div class="mu" style="font-size:12px;margin-top:2px">${fmt(n.date)}${n.tag?" · "+esc(n.tag):""}</div></div></div>`;
+  sheet(`<h1>📝 Notas</h1><button id="nn">+ Nueva nota</button><br><br>${L.length?`<input id="nq" placeholder="Buscar en mis notas" style="margin-bottom:8px"><div id="nch" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${["Todas",...NTAGS].map((t,i)=>`<span class="tag" data-nf="${i?t:""}" style="cursor:pointer;padding:6px 12px;${i?"":"background:var(--pr);color:#fff"}">${t}</span>`).join("")}</div><div id="nl">${L.map(item).join("")}</div><p class="mu" id="ne" style="display:none">No hay notas con ese filtro.</p>`:'<p class="mu">Todavía no hay notas. Tocá "Nueva nota" para guardar algo importante: un teléfono, una fecha, un recordatorio de la finca.</p>'}<br><button class="s" id="cx">Cerrar</button>`);
+  $("nn").onclick=()=>fNota();$("cx").onclick=close;if(!L.length)return;
+  let tg="";const flt=()=>{const q=$("nq").value.toLowerCase().trim();let v=0;document.querySelectorAll("#nl [data-nid]").forEach(e=>{const ok=(!tg||e.dataset.t===tg)&&(!q||e.dataset.s.includes(q));e.style.display=ok?"":"none";if(ok)v++});$("ne").style.display=v?"none":""};
+  $("nq").oninput=flt;
+  document.querySelectorAll("#nch [data-nf]").forEach(c=>c.onclick=()=>{tg=c.dataset.nf;document.querySelectorAll("#nch [data-nf]").forEach(x=>{const on=x===c;x.style.background=on?"var(--pr)":"";x.style.color=on?"#fff":""});flt()});
+  document.querySelectorAll("#nl [data-npin]").forEach(b=>b.onclick=e=>{e.stopPropagation();const n=S.notes.find(z=>z.id===b.dataset.npin);n.pin=!n.pin;save();render();fNotas()});
+  document.querySelectorAll("#nl [data-nid]").forEach(c=>c.onclick=()=>fNota(S.notes.find(z=>z.id===c.dataset.nid)))}
+function fNota(n){n=n||{};
+  sheet(`<h1>${n.id?"Editar nota":"Nueva nota"}</h1>
+  <label>Título</label><input id="n_t" value="${esc(n.title||"")}" placeholder="Ej. Pagar cuota de la finca">
+  <label>Nota</label><textarea id="n_x" rows="5" placeholder="Escribí aquí lo que no querés olvidar">${esc(n.text||"")}</textarea>
+  <label>Etiqueta (opcional)</label><select id="n_g"><option value="">Sin etiqueta</option>${NTAGS.map(t=>`<option ${n.tag===t?"selected":""}>${t}</option>`).join("")}</select>
+  <label><input type="checkbox" id="n_p" ${n.pin?"checked":""} style="width:auto"> ⭐ Fijar arriba (nota importante)</label><br>
+  <button id="ok">Guardar</button><br><br>${n.id?'<button class="d" id="del">Eliminar</button><br><br>':""}<button class="s" id="cx">Cancelar</button>`);
+  $("ok").onclick=()=>{const t=$("n_t").value.trim(),x=$("n_x").value.trim();if(!t&&!x)return alert("Escribí un título o una nota");
+    const o={title:t||x.slice(0,40),text:x,tag:$("n_g").value,pin:$("n_p").checked};if(n.id)Object.assign(n,o);else S.notes.push({id:uid(),date:today(),...o});save();render();fNotas()};
+  if(n.id)$("del").onclick=()=>{if(confirm("¿Eliminar esta nota?")){S.notes=S.notes.filter(z=>z!==n);save();render();fNotas()}};
+  $("cx").onclick=()=>fNotas()}
 function fPot(){const P2={};act().forEach(a=>{const k=a.pot||"Sin potrero";(P2[k]=P2[k]||[]).push(a)});
   sheet(`<h1>📍 Potreros</h1>${Object.entries(P2).sort().map(([k,v])=>`<div class="card"><div class="row"><span class="b">${esc(k)}</span><span>${v.length}</span></div><div class="mu">${v.map(a=>"#"+esc(a.tag)).join(", ")}</div></div>`).join("")||'<p class="mu">Sin animales cargados.</p>'}<button id="mv">Mover animales de potrero</button><br><br><button class="s" id="cx">Cerrar</button>`);
   $("mv").onclick=()=>fMovPot();$("cx").onclick=close}
@@ -1487,6 +1509,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("[data-lhx]")){S.meta.lhOpen=!S.meta.lhOpen;save();render();return}
   if(e.target.closest("[data-lhall]")){S.meta.lhAll=!S.meta.lhAll;save();render();return}
   if(e.target.closest("[data-mnh]")){S.meta.mnOpen=!S.meta.mnOpen;save();render();return}
+  if(e.target.closest("[data-nts]")){fNotas();return}
   {const mn=e.target.closest("[data-mn]");if(mn){PZ.mn=PZ.mn===mn.dataset.mn?null:mn.dataset.mn;render();return}}
   {const q=e.target.closest("[data-rst]");if(q){fEst(q.dataset.rst);return}}
   if(e.target.closest("[data-sires]")){fSires();return}
