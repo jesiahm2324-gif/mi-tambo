@@ -969,7 +969,7 @@ async function renCheck(){try{if(!navigator.onLine)return null;const r=await fet
   LS("mt_lic",code);LIC=n;return n}catch(e){return null}}
 const renMsg=n=>"✅ Tu acceso fue renovado\n"+(n.exp?"Ahora vence el "+fmt(n.exp)+" ("+n.days+" días)":"Ahora no tiene fecha de vencimiento");
 async function verAcceso(){renT=Date.now();const n=await renCheck();if(n){try{close()}catch(e){}render();alert(renMsg(n));return}
-  const L=LIC||{};if(confirm((navigator.onLine?"Tu acceso está al día. No hay renovaciones pendientes.":"No hay conexión a internet para verificar.")+"\n"+(L.exp?"Vence el "+fmt(L.exp)+".":"No tiene fecha de vencimiento.")+"\n\n¿Tenés un código de activación para ingresar?")){try{close()}catch(e){}showAct(true)}}
+  const L=LIC||{};alert((navigator.onLine?"✅ Tu acceso está al día. No hay renovaciones pendientes.":"No hay conexión a internet para verificar. Probá de nuevo cuando tengas señal.")+"\n"+(L.exp?"Vence el "+fmt(L.exp)+" ("+L.days+" días).":"No tiene fecha de vencimiento.")+(navigator.onLine?"\n\nCuando se renueve, se actualiza solo al abrir la App con internet.":""))}
 let renT=0;async function renBg(){if(Date.now()-renT<600000)return;renT=Date.now();const n=await renCheck();if(n){render();alert(renMsg(n))}}
 async function licInit(){const c=LS("mt_lic");LIC=c?await licCheck(c):{st:"none"};return LIC.st==="ok"}
 function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
