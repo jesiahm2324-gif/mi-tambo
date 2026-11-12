@@ -319,7 +319,7 @@ function alerts(){
   {const rec=milkDays(addD(t,-3),t).per,bas=milkDays(addD(t,-17),addD(t,-4)).per;
    act().filter(a=>a.cat==="Vaca en ordeñe").forEach(a=>{const x=rec[a.id],y=bas[a.id];if(!x||!y||x.n<2||y.n<5)return;const ra=x.g/x.n,ba=y.g/y.n;if(ba<=0)return;const p=Math.round((1-ra/ba)*100);
      if(p>=20)L.push({k:"baja",r:99,i:"📉",t:"Baja de leche: "+raw(a),d:t,aid:a.id,lb:"Últimos 3 días: ",m:"-"+p+"% vs. su promedio",nolb:1})})}
-  {const l=LIC||{};if(l.st==="ok"&&l.days!=null&&l.days<=15)L.push({k:"lic",r:l.days,i:"⏳",t:"Tu acceso vence "+(l.days<=0?"hoy":"en "+l.days+" días"),d:l.exp,lb:"Fecha: ",m:"Pedí tu código de renovación ›",lic:1})}
+  {const l=LIC||{};if(l.st==="ok"&&l.days!=null&&l.days<=30)L.push({k:"lic",r:l.days,i:"⏳",t:"Tu acceso vence "+(l.days<=0?"hoy":"en "+l.days+" días"),d:l.exp,lb:"Fecha: ",m:"Pedí tu código de renovación ›",lic:1})}
   try{const M=new Map();descList().forEach(x=>M.set(x.a.id,{a:x.a,i:x.i}));evList().forEach(x=>{const o=M.get(x.a.id)||{a:x.a};o.e=x;M.set(x.a.id,o)});
    M.forEach(({a,i,e})=>{const now=!!(i&&i.now),soon=!!(i&&i.soon&&!i.now),ek=e?e.k:"",mot=[];
     if(now)mot.push(i.mot);else if(soon)mot.push("Próxima: "+i.mot);
@@ -961,6 +961,14 @@ async function licCheck(code){
     const t=nowD();if(d.e&&t>d.e)return{st:"exp",name:d.n,exp:d.e};
     return{st:"ok",name:d.n,exp:d.e||"",days:d.e?dd(d.e,t):null}}
   catch(e){return{st:"bad"}}}
+/* ===== Renovación automática (renovaciones.json) ===== */
+const sha=async t=>new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)));
+async function renCheck(){try{if(!navigator.onLine)return null;const r=await fetch("renovaciones.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return null;const j=await r.json(),id=devId(),h=[...(await sha("mt-id|"+id)).slice(0,8)].map(x=>x.toString(16).padStart(2,"0")).join(""),it=(j.items||[]).find(x=>x.h===h);if(!it)return null;
+  const raw=unb64u(it.c),key=await crypto.subtle.importKey("raw",await sha("mt-ren|"+id),"AES-GCM",false,["decrypt"]),code=new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:raw.slice(0,12)},key,raw.slice(12))),n=await licCheck(code);
+  if(n.st!=="ok")return null;const cur=LIC&&LIC.st==="ok"?LIC:null;if(cur&&!(cur.exp&&(!n.exp||n.exp>cur.exp)))return null;
+  LS("mt_lic",code);LIC=n;return n}catch(e){return null}}
+const renMsg=n=>"✅ Tu acceso fue renovado\n"+(n.exp?"Ahora vence el "+fmt(n.exp)+" ("+n.days+" días)":"Ahora no tiene fecha de vencimiento");
+let renT=0;async function renBg(){if(Date.now()-renT<600000)return;renT=Date.now();const n=await renCheck();if(n){render();alert(renMsg(n))}}
 async function licInit(){const c=LS("mt_lic");LIC=c?await licCheck(c):{st:"none"};return LIC.st==="ok"}
 function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
   const msg=opt?"Pegá el código nuevo que te enviaron para renovar tu acceso.":L.st==="exp"?"Tu acceso venció el <b>"+fmt(L.exp)+"</b>. Pedí la renovación enviando tu ID.":"Para usar la app necesitás un código de activación. Enviá tu ID a quien te dio la app y pegá aquí el código que te devuelva.";
@@ -973,11 +981,11 @@ function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
   $("act_c").onclick=async()=>{try{await navigator.clipboard.writeText(id);$("act_c").textContent="✅ ID copiado"}catch(e){alert("Tu ID es: "+id)}};
   if($("act_x"))$("act_x").onclick=()=>{a.style.display="none"};
   $("act_ok").onclick=async()=>{const v=$("act_t").value.trim(),r=await licCheck(v),e=$("act_e");
-    if(r.st==="ok"){LS("mt_lic",v.replace(/\s+/g,""));LIC=r;a.style.display="none";render();alert("✅ Acceso activado para "+r.name+(r.exp?"\nVálido hasta el "+fmt(r.exp):"\nSin fecha de vencimiento"));return}
+    if(r.st==="ok"){const was=L.st==="ok"&&opt;LS("mt_lic",v.replace(/\s+/g,""));LIC=r;a.style.display="none";render();alert(was?"✅ Acceso renovado para "+r.name+(r.exp?"\nAhora tu acceso vence el "+fmt(r.exp)+" ("+r.days+" días)":"\nAhora tu acceso no tiene fecha de vencimiento"):"✅ Acceso activado para "+r.name+(r.exp?"\nVálido hasta el "+fmt(r.exp):"\nSin fecha de vencimiento"));return}
     e.style.display="block";e.textContent=r.st==="dev"?"Este código fue generado para otro teléfono. Enviá el ID que aparece arriba.":r.st==="exp"?"Este código ya venció ("+fmt(r.exp)+"). Pedí uno nuevo.":"Código inválido. Revisá que lo pegaste completo."}}
-const licCard=()=>{const L=LIC||{};if(L.st!=="ok")return"";return `<div class="card ${L.days!=null&&L.days<=15?"warn":""}"><div class="b">🔑 Acceso activado</div><div class="mu">${esc(L.name)} · ${L.exp?"vence el "+fmt(L.exp)+" ("+L.days+" días)":"sin vencimiento"}</div><div class="mu">ID: ${devFmt(devId())}</div><br><button class="s" id="lic_new">Ingresar código de renovación</button></div>`};
-const licWarn=()=>{const L=LIC||{};return L.st==="ok"&&L.days!=null&&L.days<=15?`<div class="card warn" data-lic><div class="b">⏳ Tu acceso vence ${L.days<=0?"hoy":"en "+L.days+" días"}</div><div class="mu" style="color:inherit;opacity:.9">Fecha: ${fmt(L.exp)}. Pedí tu código de renovación › </div></div>`:""};
-document.addEventListener("visibilitychange",async()=>{if(document.visibilityState==="visible"&&LIC&&LIC.st==="ok"){await licInit();if(LIC.st!=="ok")showAct();else render()}});
+const licCard=()=>{const L=LIC||{};if(L.st!=="ok")return"";return `<div class="card ${L.days!=null&&L.days<=30?"warn":""}"><div class="b">🔑 Acceso activado</div><div class="mu">${esc(L.name)} · ${L.exp?"vence el "+fmt(L.exp)+" ("+L.days+" días)":"sin vencimiento"}</div><div class="mu">ID: ${devFmt(devId())}</div><br><button class="s" id="lic_new">Ingresar código de renovación</button></div>`};
+const licWarn=()=>{const L=LIC||{};return L.st==="ok"&&L.days!=null&&L.days<=30?`<div class="card warn" data-lic><div class="b">⏳ Tu acceso vence ${L.days<=0?"hoy":"en "+L.days+" días"}</div><div class="mu" style="color:inherit;opacity:.9">Fecha: ${fmt(L.exp)}. Pedí tu código de renovación › </div></div>`:""};
+document.addEventListener("visibilitychange",async()=>{if(document.visibilityState==="visible"&&LIC&&LIC.st==="ok"){await licInit();if(LIC.st!=="ok"){const n=await Promise.race([renCheck(),new Promise(r=>setTimeout(()=>r(null),4000))]);if(n){render();alert(renMsg(n))}else showAct()}else{render();renBg()}}});
 function pdfList(ids){const A=[...act()].filter(a=>!ids||ids.has(a.id)).sort(byAge),x=[40,100,180,252,285,340,420,487];
   sharePDF("listado-animales-"+today()+".pdf",[...pdfHead("Listado de animales"+(ids?" ("+A.length+" seleccionados)":"")),{c:["Ordenado de mayor a menor edad"],sz:8},{c:["Arete","Nombre","Categoría","Sexo","Edad","Dueño","Madre","Padre"],x,b:1,sz:8,line:1},...A.map(a=>({c:[a.tag,a.name,a.cat,sexo(a),edadC(a.born),a.owner,pname(a.mom),pname(a.dad)],x,sz:8})),{c:["Total de animales: "+A.length],b:1,sz:10}])}
 function cvItems(a){const rp=S.repro.filter(e=>e.aid===a.id).sort((p,q)=>p.date.localeCompare(q.date)),ev=S.events.filter(e=>e.aid===a.id||e.aid==="ALL").sort((p,q)=>p.date.localeCompare(q.date)),x=[40,110,250];
@@ -1555,7 +1563,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("input",e=>{if(e.target.id==="q"){q=e.target.value;aLim=50;if(tab==="animales"){const app=$("app"),t=document.createElement("div");t.innerHTML=UL(vAnimales());const o=[...app.children],nw=[...t.children],ix=o.findIndex(c=>c.contains(e.target));if(ix>=0&&ix<nw.length&&nw[ix].querySelector("#q")){o.slice(ix+1).forEach(c=>c.remove());nw.slice(ix+1).forEach(c=>app.appendChild(c));return}}const p=e.target.selectionStart;render();const i=$("q");i.focus();i.setSelectionRange(p,p)}});
 $("gear").onclick=fSet;$("fab").onclick=()=>tab==="rebano"?fMov():tab==="animales"?fAnimal():tab==="sanidad"?fSan():tab==="repro"?fRepro():fFin();
 (async()=>{try{const v=await idbGet();if(v)S=JSON.parse(v);else{const r=localStorage.getItem("tambo");if(r){S=JSON.parse(r);save()}}}catch(e){}
-  norm();if(await licInit())render();else showAct();
+  norm();if(await licInit()){render();renBg()}else{const n=await Promise.race([renCheck(),new Promise(r=>setTimeout(()=>r(null),4000))]);if(n){render();alert(renMsg(n))}else showAct()}
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(()=>{})})();
 </script>
