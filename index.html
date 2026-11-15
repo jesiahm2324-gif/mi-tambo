@@ -510,6 +510,26 @@ function fConf(aid){const a=byId(aid),sv=S.repro.filter(e=>e.aid===aid&&e.type==
     save();close();render();if(res==="Preñada")alert("Fecha probable de parto: "+fmt(addD(sd,GEST)))};
   $("cx").onclick=close}
 const bullF=(tipo,cur)=>parSel("x2",cur,1);
+/* ===== Validaciones suaves: avisan, nunca bloquean ===== */
+function warnOK(m){m=m.filter(Boolean);return !m.length||confirm("⚠️ Revisá estos datos:\n\n• "+m.join("\n• ")+"\n\nAceptar = guardar de todos modos.\nCancelar = volver a corregir.")}
+const _fut=d=>d>today()?"La fecha ("+fmt(d)+") es futura.":"";
+function reproWarn(type,a,d,x1,E,ed){const m=[],others=S.repro.filter(r=>r.aid===a.id&&r!==E);
+  m.push(_fut(d));
+  if(others.some(r=>r.type===type&&r.date===d))m.push("Ya hay un "+type.toLowerCase()+" de esta vaca el mismo día.");
+  const st=ed?null:rs(a.id);
+  if((type==="Servicio"||type==="Preñez confirmada")&&st&&st.st==="preñada")m.push("Esta vaca figura preñada (parto probable "+fmt(st.due||"")+"). ¿Seguro que es un nuevo servicio?");
+  if(type==="Servicio"||type==="Preñez confirmada"){const lp=others.filter(r=>r.type==="Parto"&&r.date<=d).sort((p,q)=>q.date.localeCompare(p.date))[0];if(lp&&dd(d,lp.date)<25)m.push("El servicio es solo "+dd(d,lp.date)+" días después del último parto ("+fmt(lp.date)+").");
+    const sv=others.filter(r=>r.type==="Servicio"&&r.date<=d&&r.date>=addD(d,-300)).sort((p,q)=>q.date.localeCompare(p.date))[0];if(sv&&type==="Servicio"&&dd(d,sv.date)>0&&dd(d,sv.date)<18&&!ed)m.push("Hay otro servicio de hace "+dd(d,sv.date)+" días ("+fmt(sv.date)+").")}
+  if(type==="Diagnóstico"){const sv=others.filter(r=>r.type==="Servicio"&&r.date<=d).sort((p,q)=>q.date.localeCompare(p.date))[0];
+    if(!sv)m.push("No hay un servicio anterior a esta fecha para esta vaca.");
+    else if(x1==="Preñada"&&dd(d,sv.date)<28)m.push("El diagnóstico es solo "+dd(d,sv.date)+" días después del servicio ("+fmt(sv.date)+"); antes de 28 días suele no ser confiable.");
+    const lp=others.filter(r=>r.type==="Parto"&&r.date>=d).length;if(lp&&x1==="Preñada"&&!others.some(r=>r.type==="Servicio"&&r.date<=d&&!others.some(p=>p.type==="Parto"&&p.date>r.date&&p.date<=d)))m.push("Después de esa fecha ya hay un parto registrado.")}
+  if(type==="Parto"){const x3=$("x3")?$("x3").value:"";const pd=ed?d:d;
+    const lp=others.filter(r=>r.type==="Parto"&&r.date<pd).sort((p,q)=>q.date.localeCompare(p.date))[0];
+    if(lp&&dd(pd,lp.date)<200)m.push("Este parto es solo "+dd(pd,lp.date)+" días después del anterior ("+fmt(lp.date)+").");
+    const pre=others.filter(r=>r.type==="Diagnóstico"&&r.result==="Preñada"&&r.date<=pd&&!others.some(p=>p.type==="Parto"&&p.date>r.date&&p.date<pd));
+    if(!ed&&!pre.length&&!(st&&st.st==="preñada"))m.push("Esta vaca no figura preñada; no hay preñez registrada antes de este parto.")}
+  return warnOK(m)}
 function fRepro(E){E=E||{};const F=fem();if(!F.length)return alert("Primero cargá una vaca o vaquillona");
   const ed=!!E.id,stp=E.stype||((E.detail||"").split(" · ")[0]==="Monta natural"?"Monta natural":"Inseminación"),dp=(E.detail||"").split(" · ")[0];
   const X={Servicio:`<label>Tipo de servicio</label><select id="x1">${opts(["Inseminación","Monta natural"],stp)}</select><label>Toro (monta natural) o nombre del toro / pajuela (inseminación)</label><div id="x2w"></div>`,
@@ -525,6 +545,7 @@ function fRepro(E){E=E||{};const F=fem();if(!F.length)return alert("Primero carg
   const tg=()=>{const t=$("f_t").value;$("xx").innerHTML=X[t];if(t==="Servicio"||t==="Preñez confirmada"){const f=()=>{$("x2w").innerHTML=bullF($("x1").value,E.bull||"");parNew("x2",E.bull||"",1)};$("x1").onchange=f;f()}if(t==="Diagnóstico")parNew("x4",E.bull||"",1)};$("f_t").onchange=tg;tg();
   $("ok").onclick=()=>{const type=$("f_t").value,a=byId($("f_a").value),d=$("f_d").value||today();
     const x1=$("x1")?$("x1").value:"",x2=$("x2")?$("x2").value.trim():"",x3=$("x3")?$("x3").value:"";
+    if(!reproWarn(type,a,d,x1,ed?E:null,ed))return;
     if(type==="Preñez confirmada"){const dc=$("x3").value&&$("x3").value>d?$("x3").value:(today()>d?today():d),tp=x1,bl=x2,svId=uid(),dxId=uid();
       S.repro.push({id:svId,type:"Servicio",aid:a.id,date:d,note:$("f_n").value.trim(),detail:tp+(bl?" · "+pname(bl):""),result:"",stype:tp,bull:bl,dx:dxId},{id:dxId,svc:svId,type:"Diagnóstico",aid:a.id,date:dc,note:"",detail:$("x5").value,result:"Preñada",bull:bl,preg:d,due:addD(d,GEST),man:false});
       save();close();render();alert("Preñez registrada. Fecha probable de parto: "+fmt(addD(d,GEST)));return}
@@ -634,7 +655,7 @@ function fFx(x){x=x||{};const A=CU();if(!A)return fCajaCfg();let man=!!x.id;
   const cur=id=>A.find(a=>a.id===id).cur,r2=v=>Math.round(v*100)/100;
   const calc=()=>{const f=$("x_f").value,o=numP($("x_o").value),r=numP($("x_r").value);$("x_lo").textContent="Monto que sale ("+cur(f)+")";$("x_li").textContent="Monto que entra ("+cur(f==="u"?"c":"u")+")";if(!man&&o>0&&r>0)$("x_i").value=r2(f==="u"?o*r:o/r)};
   $("x_f").onchange=()=>{man=false;calc()};$("x_o").oninput=()=>{man=false;calc()};$("x_r").oninput=()=>{man=false;calc()};$("x_i").oninput=()=>{man=true};calc();
-  $("ok").onclick=()=>{const f=$("x_f").value,o=numP($("x_o").value),r=numP($("x_r").value),i=numP($("x_i").value);if(!(o>0))return alert("Escribí el monto que sale");if(!(r>0))return alert("Escribí la tasa");if(!(i>0))return alert("Escribí el monto que entra");
+  $("ok").onclick=()=>{const f=$("x_f").value,o=numP($("x_o").value),r=numP($("x_r").value),i=numP($("x_i").value);if(!(o>0))return alert("Escribí el monto que sale");if(!(r>0))return alert("Escribí la tasa");if(!(i>0))return alert("Escribí el monto que entra");{const t=+S.meta.tasa||0;if(t&&Math.abs(r-t)/t>0.15&&!confirm("⚠️ La tasa que escribiste ("+r+") se aleja más de 15% de la tasa de referencia ("+t+").\n\nAceptar = guardar de todos modos.\nCancelar = volver a corregir."))return}
     const d=$("x_d").value||today(),obj={date:d,from:f,to:f==="u"?"c":"u",out:o,inn:i,rate:r,note:$("x_n").value.trim()};
     if(x.id)Object.assign(x,obj);else S.fx.push({id:uid(),...obj});S.meta.tasa=r;fm=d.slice(0,7);save();close();render()};
   if(x.id)$("del").onclick=()=>{if(confirm("¿Eliminar este cambio de moneda?")){S.fx=S.fx.filter(z=>z!==x);save();close();render()}};
@@ -661,6 +682,13 @@ function fFin(f){f=f||{};
     S.meta[k]=S.meta[k]||[];S.meta[k].push(n);save();tg(n)};
   $("ok").onclick=()=>{const m=numP($("f_m").value);if(!(m>0))return alert("Ingresá un monto válido");
     const d=$("f_d").value||today(),o={kind:$("f_k").value,cat:$("f_c").value,amount:m,date:d,note:$("f_n").value.trim(),ref:$("f_rf").value.trim()};if(CU()){o.acc=$("f_a").value;S.meta.lastAcc=o.acc}
+    {const m=[_fut(d)];
+      if(S.fin.some(x=>x!==f&&x.kind===o.kind&&x.amount===o.amount&&x.date===d&&x.cat===o.cat&&(x.acc||"")===(o.acc||"")))m.push("Ya hay un movimiento igual (mismo rubro, monto y fecha).");
+      if(S.meta.cajaIni&&CU()&&d<S.meta.cajaIni)m.push("La fecha es anterior al saldo inicial de caja ("+fmt(S.meta.cajaIni)+"); no se va a contar en el saldo.");
+      const hs=S.fin.filter(x=>x!==f&&x.kind===o.kind&&x.cat===o.cat&&(x.acc||"")===(o.acc||"")).map(x=>x.amount).sort((p,q)=>p-q);
+      if(hs.length>=4){const md=hs[Math.floor(hs.length/2)];if(md>0&&o.amount>md*6)m.push("El monto es unas "+Math.round(o.amount/md)+" veces mayor que lo habitual en «"+o.cat+"» (mediana "+money(md)+").");else if(md>0&&o.amount<md/10)m.push("El monto es muy pequeño comparado con lo habitual en «"+o.cat+"» (mediana "+money(md)+"). ¿Falta un cero?")}
+      if(o.kind==="gasto"&&CU()){const ac=accOf(o),prev=f.id&&accOf(f).id===ac.id&&f.kind==="gasto"?f.amount:0,sal=saldoAcc(ac)+prev;if(d>=S.meta.cajaIni&&o.amount>sal)m.push("Este gasto deja la cuenta «"+ac.name+"» en negativo (saldo actual "+mon(sal,ac.cur)+").")}
+      if(!warnOK(m))return}
     if(f.id)Object.assign(f,o);else S.fin.push({id:uid(),...o});
     fm=d.slice(0,7);save();close();render()};
   if(f.id)$("del").onclick=()=>{if(confirm("¿Eliminar este movimiento?")){S.fin=S.fin.filter(x=>x!==f);save();close();render()}};
@@ -1007,7 +1035,7 @@ function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
   $("act_ok").onclick=async()=>{const v=$("act_t").value.trim(),r=await licCheck(v),e=$("act_e");
     if(r.st==="ok"){const was=L.st==="ok"&&opt;LS("mt_lic",v.replace(/\s+/g,""));LIC=r;a.style.display="none";render();alert(was?"✅ Acceso renovado para "+r.name+(r.exp?"\nAhora tu acceso vence el "+fmt(r.exp)+" ("+r.days+" días)":"\nAhora tu acceso no tiene fecha de vencimiento"):"✅ Acceso activado para "+r.name+(r.exp?"\nVálido hasta el "+fmt(r.exp):"\nSin fecha de vencimiento"));return}
     e.style.display="block";e.textContent=r.st==="dev"?"Este código fue generado para otro teléfono. Enviá el ID que aparece arriba.":r.st==="exp"?"Este código ya venció ("+fmt(r.exp)+"). Pedí uno nuevo.":"Código inválido. Revisá que lo pegaste completo."}}
-const VERS="2026.11.14";
+const VERS="2026.11.15";
 const licCard=()=>{const L=LIC||{};if(L.st!=="ok")return"";return `<div class="card ${L.days!=null&&L.days<=30?"warn":""}"><div class="b">🔑 Acceso activado</div><div class="mu">${esc(L.name)} · ${L.exp?"vence el "+fmt(L.exp)+" ("+L.days+" días)":"sin vencimiento"}</div><div class="mu">ID: ${devFmt(devId())}</div><div class="mu">Versión de la App: <b>${VERS}</b></div><br><button class="s" id="lic_new">🔄 Verificar mi acceso</button></div>`};
 const licWarn=()=>{const L=LIC||{};return L.st==="ok"&&L.days!=null&&L.days<=30?`<div class="card warn" data-lic><div class="b">⏳ Tu acceso vence ${L.days<=0?"hoy":"en "+L.days+" días"}</div><div class="mu" style="color:inherit;opacity:.9">Fecha: ${fmt(L.exp)}. Tocá para verificar tu renovación › </div></div>`:""};
 document.addEventListener("visibilitychange",async()=>{if(document.visibilityState==="visible"&&LIC&&LIC.st==="ok"){await licInit();if(LIC.st!=="ok"){const n=await Promise.race([renCheck(),new Promise(r=>setTimeout(()=>r(null),4000))]);if(n){render();alert(renMsg(n))}else showAct()}else{render();renBg()}}});
@@ -1115,6 +1143,10 @@ const wkStart=()=>{const v=S.meta.wkStart;if(v!==undefined&&v!=="auto"&&v!==null
 const wkOf=x=>{const t=new Date(x+"T00:00"),w=wkStart();t.setDate(t.getDate()-((t.getDay()-w+7)%7));return ymd(t)};
 const wkLbl=()=>{const w=wkStart();return DSEM[w].slice(0,3)+" a "+DSEM[(w+6)%7].slice(0,3)};
 const monday=x=>{const t=new Date(x+"T00:00");t.setDate(t.getDate()-((t.getDay()+6)%7));return ymd(t)};
+function milkWarn(v,days,from,to){const m=[];if(to>today())m.push("El período termina el "+fmt(to)+", que es una fecha futura.");
+  const r=S.milk.filter(x=>x.aid==="ALL"&&x.date!==from).sort((p,q)=>q.date.localeCompare(p.date)).slice(0,6).map(x=>x.l/(x.days||1));
+  if(r.length>=2){const av=r.reduce((a,b)=>a+b,0)/r.length,pd=v/days;if(pd>av*1.8)m.push("El promedio diario ("+fmtMilk(pd)+") es mucho mayor que el de los últimos registros ("+fmtMilk(av)+" por día).");else if(pd<av*0.4)m.push("El promedio diario ("+fmtMilk(pd)+") es mucho menor que el de los últimos registros ("+fmtMilk(av)+" por día).")}
+  return warnOK(m)}
 function fLeche(d,mode,f0,t0){mode=mode||S.meta.milkMode||"glob";d=d||today();const wk=mode!=="dia";let from=d,to=d;if(wk){from=f0||wkOf(d);to=t0||(f0?f0:addD(from,6));if(to<from)to=from}
   const days=dd(to,from)+1,V=act().filter(a=>a.cat==="Vaca en ordeñe"),key=m=>m.date===from&&(m.days||1)===days,exC=x=>S.milk.find(m=>m.aid===x&&key(m)),exG=S.milk.find(m=>m.aid==="ALL"&&key(m)),totC=S.milk.filter(m=>m.aid!=="ALL"&&key(m)).reduce((a,m)=>a+m.l,0),recent=S.milk.filter(m=>m.aid==="ALL").sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
   sheet(`<h1>🥛 Producción de leche</h1>${unitSel("l_u")}<label>Tipo de registro</label><select id="l_m"><option value="glob" ${mode==="glob"?"selected":""}>Global del rebaño (por período)</option><option value="sem" ${mode==="sem"?"selected":""}>Por vaca (por período)</option><option value="dia" ${mode==="dia"?"selected":""}>Por vaca (diario)</option></select>
@@ -1127,7 +1159,7 @@ function fLeche(d,mode,f0,t0){mode=mode||S.meta.milkMode||"glob";d=d||today();co
   if(wk){$("l_f").onchange=()=>{const f=$("l_f").value||from;let t=$("l_t").value||f;if(t<f)t=f;fLeche(f,mode,f,t)};$("l_t").onchange=$("l_f").onchange}else $("l_d").onchange=e=>fLeche(e.target.value||d,mode);
   document.querySelectorAll("[data-gl]").forEach(el=>el.onclick=()=>{const m=S.milk.find(x=>x.id===el.dataset.gl);fLeche(m.date,"glob",m.date,mEnd(m))});
   $("rep").onclick=fLecheRep;$("cx").onclick=close;
-  $("ok").onclick=()=>{S.meta.milkMode=mode;if(mode==="glob"){const am=parseMilk($("l_gm").value),pm=parseMilk($("l_gt").value),v=am+pm;S.milk=S.milk.filter(m=>!(m.aid==="ALL"&&key(m)));const ov=S.milk.filter(m=>m.aid==="ALL"&&m.date<=to&&mEnd(m)>=from);if(v>0&&ov.length){if(!confirm("Estos días ya están en otro registro: "+ov.map(m=>fmt(m.date)+" al "+fmt(mEnd(m))+" ("+fmtMilk(m.l)+")").join(", ")+".\n\nSi guardás los dos, el reporte cuenta esos días dos veces.\n\nOK = reemplazar el registro anterior con este.\nCancelar = no guardar."))return;S.milk=S.milk.filter(m=>!ov.includes(m))}if(v>0)S.milk.push({id:uid(),aid:"ALL",date:from,to,days,l:v,am,pm})}else{document.querySelectorAll("[data-lm]").forEach(i=>{const id=i.dataset.lm,am=parseMilk(i.value),pm=parseMilk(document.querySelector('[data-lt="'+id+'"]').value),v=am+pm;S.milk=S.milk.filter(m=>!(m.aid===id&&key(m)));if(v>0)S.milk.push({id:uid(),aid:id,date:from,to,days,l:v,am,pm})})}save();close();render()};
+  $("ok").onclick=()=>{S.meta.milkMode=mode;if(mode==="glob"){const am=parseMilk($("l_gm").value),pm=parseMilk($("l_gt").value),v=am+pm;if(v>0&&!milkWarn(v,days,from,to))return;S.milk=S.milk.filter(m=>!(m.aid==="ALL"&&key(m)));const ov=S.milk.filter(m=>m.aid==="ALL"&&m.date<=to&&mEnd(m)>=from);if(v>0&&ov.length){if(!confirm("Estos días ya están en otro registro: "+ov.map(m=>fmt(m.date)+" al "+fmt(mEnd(m))+" ("+fmtMilk(m.l)+")").join(", ")+".\n\nSi guardás los dos, el reporte cuenta esos días dos veces.\n\nOK = reemplazar el registro anterior con este.\nCancelar = no guardar."))return;S.milk=S.milk.filter(m=>!ov.includes(m))}if(v>0)S.milk.push({id:uid(),aid:"ALL",date:from,to,days,l:v,am,pm})}else{document.querySelectorAll("[data-lm]").forEach(i=>{const id=i.dataset.lm,am=parseMilk(i.value),pm=parseMilk(document.querySelector('[data-lt="'+id+'"]').value),v=am+pm;S.milk=S.milk.filter(m=>!(m.aid===id&&key(m)));if(v>0)S.milk.push({id:uid(),aid:id,date:from,to,days,l:v,am,pm})})}save();close();render()};
   if(mode==="glob"&&exG)$("del").onclick=()=>{S.milk=S.milk.filter(m=>m!==exG);save();close();render()}}
 function fLecheRep(){const t=today();sheet(`<h1>📊 Reportes de producción</h1><label>Desde</label><input type="date" id="r_f" value="${t.slice(0,8)}01"><label>Hasta</label><input type="date" id="r_t" value="${t}"><button id="r1">📄 Producción por vaca</button><br><br><button id="r2">📄 Producción por semana</button><br><br><button class="s" id="cx">Volver</button>`);
   $("r1").onclick=()=>pdfLecheVaca($("r_f").value,$("r_t").value);$("r2").onclick=()=>pdfLecheSemana($("r_f").value,$("r_t").value);$("cx").onclick=()=>fLeche()}
@@ -1280,6 +1312,10 @@ function fAnimal(a){a=a||{};
   $("f_ph").onchange=e=>{const f=e.target.files[0];if(f)shrink(f,d=>{ph=d;$("pv").src=d;$("pv").style.display="block"})};
   $("ok").onclick=()=>{const tag=$("f_tag").value.trim();if(!tag)return alert("Falta la caravana");
     if(!isSN(tag)&&S.animals.some(x=>x.tag===tag&&x.id!==a.id&&x.status!=="baja"))return alert("Esa caravana ya existe");
+    {const b=$("f_born").value,m=[];if(b){if(b>today())m.push("La fecha de nacimiento ("+fmt(b)+") es futura.");else if(dd(today(),b)>25*365)m.push("Esa fecha de nacimiento da más de 25 años de edad.");
+      const mom=$("f_mom").value.trim();const M=mom&&S.animals.find(x=>x.tag===mom&&x.id!==a.id);if(M&&M.born&&b&&M.born>=b)m.push("La madre #"+mom+" nació después (o el mismo día) que este animal.");
+      if(a.id){const first=S.repro.filter(r=>r.aid===a.id).map(r=>r.date).sort()[0];if(first&&first<=b)m.push("Este animal tiene eventos reproductivos (desde "+fmt(first)+") anteriores a su nacimiento.")}}
+      if(!warnOK(m))return}
     const o={id:a.id||uid(),tag,name:$("f_name").value.trim(),cat:$("f_cat").value,born:$("f_born").value,breed:$("f_breed").value.trim(),photo:ph,owner:$("f_own").value.trim(),note:$("f_note").value.trim(),pot:$("f_pot").value.trim(),mom:$("f_mom").value.trim(),dad:$("f_dad").value.trim(),status:a.status||"activo"};
     const oc=a.id?a.cat:null;if(a.id)Object.assign(a,o);else S.animals.push(o);save();close();render();if(oc==="Ternero"&&o.cat==="Novillo")fPeso(o.id===a.id?a:S.animals.find(x=>x.id===o.id),{why:"Cambió de categoría: "+oc+" → "+o.cat+". Anotá el peso en kilos para dejar el registro.",note:"Cambio a "+o.cat})};
   $("cx").onclick=close}
@@ -1312,6 +1348,10 @@ function fSan(E){E=E||{};if(!act().length)return alert("Primero cargá al menos 
   $("f_p").addEventListener("change",()=>{const p=vacPlan().find(x=>x.name===$("f_p").value);if(p){drawRep(p.months||"");auto();if(p.months===12||p.months===6){}else if(p.months&&$("f_d").value)$("f_nx").value=addM($("f_d").value,p.months)}});
   if(!ed&&rep0)auto();
   $("ok").onclick=()=>{const o={aid:$("f_a").value,type:$("f_t").value,date:$("f_d").value||today(),product:$("f_p").value.trim(),days:+$("f_r").value||0,next:$("f_nx").value,note:$("f_n").value.trim()};
+    {const m=[_fut(o.date)];if(o.next&&o.next<=o.date)m.push("La próxima aplicación ("+fmt(o.next)+") es igual o anterior a la fecha de este registro.");
+      if(S.events.some(x=>x!==E&&x.aid===o.aid&&x.type===o.type&&x.date===o.date&&(x.product||"").toLowerCase()===o.product.toLowerCase()))m.push("Ya existe el mismo registro (animal, tipo, producto y fecha).");
+      const an=byId(o.aid);if(an&&an.born&&o.date<an.born)m.push("La fecha es anterior al nacimiento del animal ("+fmt(an.born)+").");
+      if(!warnOK(m))return}
     if(ed)Object.assign(E,o);else S.events.push({id:uid(),...o});save();close();render()};
   if(ed)$("del").onclick=()=>{if(confirm("¿Eliminar este registro sanitario?")){S.events=S.events.filter(x=>x!==E);save();close();render()}};
   $("cx").onclick=close}
@@ -1509,7 +1549,13 @@ function fPeso(a,o){o=o||{};const w=o.w||{};
   sheet(`<h1>⚖️ Peso de ${nm(a)}</h1>${o.why?`<p class="mu">${o.why}</p>`:""}<label>Peso en kilos (kg)</label><input id="w_k" inputmode="decimal" placeholder="Ej. 180" value="${w.kg||""}"><label>Fecha</label><input type="date" id="w_d" value="${w.date||today()}"><label>Nota (opcional)</label><input id="w_n" value="${esc(w.note||o.note||"")}" placeholder="Ej. Pesado con cinta"><br><button id="ok">Guardar peso</button><br><br>${w.id?'<button class="d" id="del">Eliminar este peso</button><br><br>':""}<button class="s" id="cx">${o.why?"Omitir por ahora":"Cancelar"}</button>`);
   const back=()=>{close();render();if(o.back)detail(a)};
   $("cx").onclick=back;
-  $("ok").onclick=()=>{const kg=parseFloat(String($("w_k").value).replace(",","."));if(!(kg>0))return alert("Escribí el peso en kilos");const r={id:w.id||uid(),aid:a.id,date:$("w_d").value||today(),kg:Math.round(kg*10)/10,note:$("w_n").value.trim()};if(w.id)Object.assign(w,r);else S.weights.push(r);save();back()};
+  $("ok").onclick=()=>{const kg=parseFloat(String($("w_k").value).replace(",","."));if(!(kg>0))return alert("Escribí el peso en kilos");const r={id:w.id||uid(),aid:a.id,date:$("w_d").value||today(),kg:Math.round(kg*10)/10,note:$("w_n").value.trim()};
+    {const m=[_fut(r.date)];if(kg<15||kg>1300)m.push("El peso ("+kg+" kg) parece fuera de lo normal para un bovino.");
+      else{const pv=S.weights.filter(x=>x.aid===a.id&&x!==w&&x.date<=r.date).sort((p,q)=>q.date.localeCompare(p.date))[0];
+        if(pv){const dias=Math.max(1,dd(r.date,pv.date)),ch=(kg-pv.kg)/pv.kg;if(Math.abs(ch)>0.3&&dias<60)m.push("Cambió "+(ch>0?"+":"")+Math.round(ch*100)+"% en "+dias+" días (antes "+pv.kg+" kg el "+fmt(pv.date)+").");else if(ch<-0.1&&dias<45)m.push("Bajó de "+pv.kg+" a "+kg+" kg en "+dias+" días.")}}
+      if(a.born&&r.date<a.born)m.push("La fecha es anterior al nacimiento del animal.");
+      if(!warnOK(m))return}
+    if(w.id)Object.assign(w,r);else S.weights.push(r);save();back()};
   if(w.id)$("del").onclick=()=>{S.weights=S.weights.filter(x=>x!==w);save();back()}}
 let FO={};
 const fsec=(k,ic,t,sub,body,right)=>`<div class="card" data-fx="${k}" style="cursor:pointer"><div class="row"><span style="display:flex;align-items:center;gap:10px;min-width:0"><span style="font-size:18px">${ic}</span><span style="min-width:0"><span class="b" style="display:block">${t}</span><span class="mu" style="display:block">${sub}</span></span></span><span style="display:flex;align-items:center;gap:8px;flex:none">${right||""}<span class="mc ${FO[k]?"op":""}">${ic0("chev")}</span></span></div></div><div id="fsb-${k}" style="display:${FO[k]?"block":"none"}">${body}</div>`;
