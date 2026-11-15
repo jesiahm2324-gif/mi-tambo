@@ -302,6 +302,8 @@ const nm=a=>a&&a.ALL?"Todo el rebaño":a?("#"+esc(a.tag)+(a.name?" "+esc(a.name)
 function until(e){if(!e.days)return null;const d=new Date(e.date+"T00:00");d.setDate(d.getDate()+ +e.days);return d.toISOString().slice(0,10)}
 const opts=(a,sel)=>a.map(x=>`<option ${x===sel?"selected":""}>${x}</option>`).join("");
 
+const lastSun=()=>addD(today(),-new Date(today()+"T00:00").getDay());
+const bkDue=()=>{if(!S.animals.length&&!S.fin.length&&!S.milk.length)return false;const lb=S.meta.lastBackup;return !lb||lb<lastSun()};
 function alerts(){
   const t=today(),L=[];
   fem().forEach(a=>{const s=rs(a.id);if(s.st==="preñada"&&s.due){const r=dd(s.due,t);if(r<=AD())L.push({k:"parto",r,i:"🐄",t:"Parto: "+raw(a),d:s.due,aid:a.id})}else if((s.st==="parida"||s.st==="vacía")&&s.lp){const dp=dd(t,s.lp),lim=+cfg().vac||90;if(dp>=lim)L.push({k:"vacia",r:lim-dp,i:"⚠️",t:"Vacía: "+raw(a),d:s.lp,aid:a.id,m:dp+" d sin preñez"});else if(s.st==="parida"&&dp>=45)L.push({k:"serv",r:45-dp,i:"📅",t:"Lista para servicio: "+raw(a),d:s.lp,aid:a.id,lb:"Último parto: ",m:dp+" d posparto"})}
@@ -319,6 +321,7 @@ function alerts(){
   {const rec=milkDays(addD(t,-3),t).per,bas=milkDays(addD(t,-17),addD(t,-4)).per;
    act().filter(a=>a.cat==="Vaca en ordeñe").forEach(a=>{const x=rec[a.id],y=bas[a.id];if(!x||!y||x.n<2||y.n<5)return;const ra=x.g/x.n,ba=y.g/y.n;if(ba<=0)return;const p=Math.round((1-ra/ba)*100);
      if(p>=20)L.push({k:"baja",r:99,i:"📉",t:"Baja de leche: "+raw(a),d:t,aid:a.id,lb:"Últimos 3 días: ",m:"-"+p+"% vs. su promedio",nolb:1})})}
+  if(bkDue())L.push({k:"resp",r:6,i:"💾",t:"Falta tu respaldo semanal",d:t,nolb:1,lb:S.meta.lastBackup?"Último respaldo: "+fmt(S.meta.lastBackup):"Todavía no has respaldado",m:"Tocá para respaldar ›",resp:1});
   {const l=LIC||{};if(l.st==="ok"&&l.days!=null&&l.days<=30)L.push({k:"lic",r:l.days,i:"⏳",t:"Tu acceso vence "+(l.days<=0?"hoy":"en "+l.days+" días"),d:l.exp,lb:"Fecha: ",m:"Tocá para verificar tu renovación ›",lic:1})}
   try{const M=new Map();descList().forEach(x=>M.set(x.a.id,{a:x.a,i:x.i}));evList().forEach(x=>{const o=M.get(x.a.id)||{a:x.a};o.e=x;M.set(x.a.id,o)});
    M.forEach(({a,i,e})=>{const now=!!(i&&i.now),soon=!!(i&&i.soon&&!i.now),ek=e?e.k:"",mot=[];
@@ -327,17 +330,17 @@ function alerts(){
     const st=now?"Para descarte":ek==="evr"?e.m:ek==="evo"?e.m:"Próxima a descarte",r=now?97:ek==="evr"?e.r:ek==="evo"?99:98,pre=(now||ek==="evr")?"Descarte: ":ek==="evo"?"En observación: ":"Próxima a descarte: ";
     L.push({k:"desc",r,i:ek==="evo"&&!now?"👁️":"🐄",t:pre+raw(a),d:today(),aid:a.id,nolb:1,lb:mot.join(" · "),m:st})})}catch(x){}
   return L.sort((a,b)=>a.r-b.r)}
-const alWarn=x=>x.k==="lret"||x.k==="ret"||x.k==="lic"||(x.r<=7&&x.k!=="serv"&&x.k!=="baja");
-const alUrg=x=>x.r<=7&&!["vacia","serv","ret","lret","baja","lic","desc","descp","evr","evo"].includes(x.k);
+const alWarn=x=>x.k==="resp"||x.k==="lret"||x.k==="ret"||x.k==="lic"||(x.r<=7&&x.k!=="serv"&&x.k!=="baja");
+const alUrg=x=>x.r<=7&&!["vacia","serv","ret","lret","baja","lic","desc","descp","evr","evo","resp"].includes(x.k);
 function alHtml(L,nohead){
   if(!L.length)return "";
   const w=r=>r<0?"vencida hace "+(-r)+" d":r===0?"¡hoy!":"en "+r+" d";
-  return (nohead?"":`<h2>🔔 Alertas (${L.length})</h2>`)+L.map(x=>`<div class="card ${alWarn(x)?"warn":""}" ${x.lic?"data-lic":x.aid&&x.aid!=="ALL"?`data-a="${x.aid}"`:""}><div class="b">${x.i} ${esc(x.t)}</div>${x.k==="desc"?`<div style="margin-top:3px;font-weight:600">${esc(x.m)}</div><div style="opacity:.8;font-size:13px">${esc(x.lb)}</div>`:`<div class="row" style="margin-top:3px"><span style="opacity:.8">${x.nolb?x.lb:(x.lb||(x.k==="vacia"?"Último parto: ":""))+fmt(x.d)}</span><span>${x.m||w(x.r)}</span></div>`}</div>`).join("")}
+  return (nohead?"":`<h2>🔔 Alertas (${L.length})</h2>`)+L.map(x=>`<div class="card ${alWarn(x)?"warn":""}" ${x.lic?"data-lic":x.resp?"data-resp":x.aid&&x.aid!=="ALL"?`data-a="${x.aid}"`:""}><div class="b">${x.i} ${esc(x.t)}</div>${x.k==="desc"?`<div style="margin-top:3px;font-weight:600">${esc(x.m)}</div><div style="opacity:.8;font-size:13px">${esc(x.lb)}</div>`:`<div class="row" style="margin-top:3px"><span style="opacity:.8">${x.nolb?x.lb:(x.lb||(x.k==="vacia"?"Último parto: ":""))+fmt(x.d)}</span><span>${x.m||w(x.r)}</span></div>`}</div>`).join("")}
 const alCard=L=>{if(!L.length)return"";const n=k=>L.filter(x=>x.k===k).length,u=L.filter(alUrg).length;
-  return `<div class="card ${u?"warn":""}" data-al><div class="row"><span class="b">🔔 Alertas (${L.length})</span><span>›</span></div><div class="mu" style="${u?"color:inherit;opacity:.9":""}">${[n("parto")?n("parto")+(n("parto")>1?" partos":" parto"):"",n("vac")?n("vac")+(n("vac")>1?" vacunas":" vacuna"):"",n("vacia")?n("vacia")+(n("vacia")>1?" vacías":" vacía"):"",n("celo")?n("celo")+(n("celo")>1?" celos":" celo"):"",n("diag")?n("diag")+(n("diag")>1?" diagnósticos":" diagnóstico"):"",n("seca")?n("seca")+(n("seca")>1?" para secar":" para secar"):"",n("serv")?n("serv")+" para servicio":"",n("lret")?n("lret")+" leche en retiro":"",n("ret")?n("ret")+(n("ret")>1?" en retiro":" en retiro"):"",n("baja")?n("baja")+(n("baja")>1?" con baja de leche":" con baja de leche"):"",n("desc")?n("desc")+" para descarte":"",n("evr")?n("evr")+" por rendimiento":"",n("evo")?n("evo")+" en observación":"",n("lic")?"acceso por vencer":""].filter(Boolean).join(" · ")}${u?" · "+u+(u>1?" urgentes":" urgente"):""}</div></div>`};
+  return `<div class="card ${u?"warn":""}" data-al><div class="row"><span class="b">🔔 Alertas (${L.length})</span><span>›</span></div><div class="mu" style="${u?"color:inherit;opacity:.9":""}">${[n("parto")?n("parto")+(n("parto")>1?" partos":" parto"):"",n("vac")?n("vac")+(n("vac")>1?" vacunas":" vacuna"):"",n("vacia")?n("vacia")+(n("vacia")>1?" vacías":" vacía"):"",n("celo")?n("celo")+(n("celo")>1?" celos":" celo"):"",n("diag")?n("diag")+(n("diag")>1?" diagnósticos":" diagnóstico"):"",n("seca")?n("seca")+(n("seca")>1?" para secar":" para secar"):"",n("serv")?n("serv")+" para servicio":"",n("lret")?n("lret")+" leche en retiro":"",n("ret")?n("ret")+(n("ret")>1?" en retiro":" en retiro"):"",n("baja")?n("baja")+(n("baja")>1?" con baja de leche":" con baja de leche"):"",n("desc")?n("desc")+" para descarte":"",n("evr")?n("evr")+" por rendimiento":"",n("evo")?n("evo")+" en observación":"",n("lic")?"acceso por vencer":"",n("resp")?"respaldo pendiente":""].filter(Boolean).join(" · ")}${u?" · "+u+(u>1?" urgentes":" urgente"):""}</div></div>`};
 const ALO={};
 function fAlertas(){const L=alerts(),G=[["lret","🥛 Leche en retiro (no enviar al tanque)"],["ret","🛡️ Animales en retiro"],["parto","🐄 Partos próximos"],["celo","💗 Celo esperado"],["diag","🩺 Para diagnóstico de preñez"],["seca","🥛 Para secar"],["serv","📅 Listas para servicio"],["vac","💉 Vacunas y medicamentos"],["vacia","⚠️ Vacías sin preñez"],["baja","📉 Baja de producción de leche"],["desc","🐄 Descarte"],["lic","⏳ Tu acceso"]];
-  sheet(`<h1>🔔 Alertas (${L.length})</h1>${G.map(([k,t])=>{const l=L.filter(x=>x.k===k);return l.length?`<h2 data-aq="${k}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"><span>${t} (${l.length})</span><span class="mc ${ALO[k]?"op":""}">${ic("chev")}</span></h2><div id="aqb-${k}" style="display:${ALO[k]?"block":"none"}">${alHtml(l,1)}</div>`:""}).join("")||'<p class="mu">No hay alertas.</p>'}<br><button class="s" id="cx">Cerrar</button>`);
+  sheet(`<h1>🔔 Alertas (${L.length})</h1>${bkCard()}${G.map(([k,t])=>{const l=L.filter(x=>x.k===k);return l.length?`<h2 data-aq="${k}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"><span>${t} (${l.length})</span><span class="mc ${ALO[k]?"op":""}">${ic("chev")}</span></h2><div id="aqb-${k}" style="display:${ALO[k]?"block":"none"}">${alHtml(l,1)}</div>`:""}).join("")||'<p class="mu">No hay más alertas.</p>'}<br><button class="s" id="cx">Cerrar</button>`);bkBind();
   document.querySelectorAll("[data-aq]").forEach(h=>h.onclick=()=>{const k=h.dataset.aq,o=!ALO[k];ALO[k]=o;$("aqb-"+k).style.display=o?"block":"none";h.querySelector(".mc").classList.toggle("op",o)});$("cx").onclick=close}
 function setIcon(){const l=$("ati"),lg=(S.meta.prof||{}).logo||"icon-180.png";if(l&&l.getAttribute("href")!==lg)l.setAttribute("href",lg)}
 let BATLOW=false;try{navigator.getBattery&&navigator.getBattery().then(b=>{const f=()=>{BATLOW=!b.charging&&b.level<.2;try{render()}catch(e){}};b.addEventListener("levelchange",f);b.addEventListener("chargingchange",f);BATLOW=!b.charging&&b.level<.2})}catch(e){}
@@ -697,6 +700,25 @@ const secT=z=>z.map(x=>x.h.toUpperCase()+"\n"+x.r.map(r=>r[0]+": "+r[1]).join("\
 const RPO={};
 const rqH=(k,t,b)=>`<h2 data-rq="${k}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"><span>${t}</span><span class="mc ${RPO[k]?"op":""}">${ic("chev")}</span></h2><div id="rqb-${k}" style="display:${RPO[k]?"block":"none"}">${b}</div>`;
 const secHA=z=>z.map((x,i)=>rqH("s"+i,x.h,`<table class="rt">${x.r.map(r=>`<tr><td style="white-space:pre-wrap">${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join("")}</table>`)).join("");
+/* ===== Respaldo de un toque ===== */
+const bkAgo=lb=>{if(!lb)return"nunca";const n=dd(today(),lb);return n<=0?"hoy":n===1?"ayer":"hace "+n+" días"};
+const bkCard=()=>{const lb=S.meta.lastBackup,due=bkDue();return `<div class="card" style="${due?"border:2px solid #e0a020":""}"><div class="b">💾 Respaldo de tus datos</div><div class="mu" style="margin:3px 0 10px">${due?"Falta el respaldo de esta semana. ":"✅ Al día. "}Último respaldo: <b>${bkAgo(lb)}</b>${lb?" ("+fmt(lb)+")":""}. Cada domingo la App te lo recuerda.</div><button id="rs_now">📤 Respaldar ahora</button><br><br><button class="s" id="rs_res">♻️ Restaurar un respaldo</button></div>`};
+async function bkShare(){const t=today(),f=new File([JSON.stringify({app:"mi-tambo",v:2,date:new Date().toISOString(),data:{...S,meta:{...S.meta,lastBackup:t}}})],"respaldo-tambo-"+t+".json",{type:"application/json"});
+  const done=()=>{S.meta.lastBackup=t;save();render();alert("✅ Respaldo guardado.\nGuardalo también en Archivos (iCloud) o enviátelo por WhatsApp para tenerlo fuera del teléfono.")};
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});done();return}}catch(e){if(e&&e.name==="AbortError")return}
+  try{const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);done()}catch(e){alert("No se pudo guardar el archivo. Probá desde Reportes y respaldo.")}}
+function fResp(){sheet(`<h1>💾 Respaldo</h1>${bkCard()}<br><button class="s" id="cx">Cerrar</button>`);bkBind();$("cx").onclick=close}
+function bkBind(){if($("rs_now"))$("rs_now").onclick=bkShare;if($("rs_res"))$("rs_res").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept=".json,.pdf,application/json,application/pdf";i.onchange=()=>{const f=i.files[0];if(f)f.text().then(restoreBk)};i.click()}}
+const kvGet=async k=>{const d=await IDB();return new Promise((res,rej)=>{const q=d.transaction("kv").objectStore("kv").get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
+const kvSet=async(k,v)=>{const d=await IDB();return new Promise((res,rej)=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})};
+function restoreBk(txt){let d,j;try{const k=txt.indexOf("MITAMBOBK:");if(k>=0){const e2=txt.indexOf(":MITAMBOEND",k);txt=decodeURIComponent(escape(atob(txt.slice(k+10,e2))))}j=JSON.parse(txt);d=j.data||j;if(!Array.isArray(d.animals))throw 0}catch(e){alert("El archivo no parece un respaldo válido de Mi Tambo");return}
+  const ml=(d.milk||[]).reduce((m,x)=>{const e=x.to||x.date;return e>m?e:m},""),nv=(d.events||[]).length+(d.repro||[]).length,row=(a,b)=>`<div class="row"><span>${a}</span><span class="b">${b}</span></div>`;
+  sheet(`<h1>♻️ Restaurar respaldo</h1><div class="card"><div class="b">${j.date?"Respaldo del "+fmt(j.date.slice(0,10)):"Respaldo"}</div><div class="md"></div>${row("🐄 Animales",d.animals.length)}${row("📋 Eventos",nv)}${row("🥛 Leche",ml?"hasta el "+fmt(ml):"sin registros")}${row("💰 Caja",(d.fin||[]).length+" movimiento"+((d.fin||[]).length===1?"":"s"))}${row("📝 Notas",(d.notes||[]).length)}</div>
+  <div class="card" style="border:2px solid #e0a020"><div class="mu">Esto reemplaza lo que hay ahora en este teléfono (<b>${S.animals.length} animal${S.animals.length===1?"":"es"}</b>). Antes de reemplazar, la App guarda una copia de lo actual para poder <b>deshacer</b>.</div></div><button id="ok">Restaurar este respaldo</button><br><br><button class="s" id="cx">Cancelar</button>`);
+  $("cx").onclick=close;
+  $("ok").onclick=async()=>{try{await kvSet("S_prev",JSON.stringify({date:new Date().toISOString(),S}))}catch(e){if(!confirm("No pude guardar la copia para deshacer. ¿Restaurar de todos modos?"))return}
+    S={...d};norm();save();close();render();alert("✅ Respaldo restaurado.\nSi te equivocaste de archivo, en Reportes y respaldo podés deshacer.")}}
+async function bkUndo(){let v;try{v=await kvGet("S_prev")}catch(e){}if(!v)return alert("No hay una restauración para deshacer.");const o=JSON.parse(v);if(!confirm("¿Volver a los datos que tenías antes de restaurar ("+(o.S.animals||[]).length+" animales)?"))return;S=o.S;norm();save();close();render();alert("✅ Listo, volviste a tus datos anteriores.")}
 function fRep(per){per=per||"mes";
   sheet(`<h1>Reportes y respaldo</h1>
   <label>Período del reporte</label><select id="rper">${Object.entries(PER).map(([k,v])=>`<option value="${k}" ${k===per?"selected":""}>${v}</option>`).join("")}</select>
@@ -717,15 +739,11 @@ function fRep(per){per=per||"mes";
   $("r1").onclick=()=>dlSave("reporte-tambo-"+t+".html",`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{font-family:-apple-system,Arial,sans-serif;max-width:700px;margin:20px auto;padding:0 14px;color:#1d2a1f}h1{font-size:22px}h2{font-size:14px;color:#2f7d4f;margin-top:22px;border-bottom:2px solid #2f7d4f;text-transform:uppercase}.rt{width:100%;border-collapse:collapse}.rt td{padding:5px 0;border-bottom:1px solid #ddd}.rt td:last-child{text-align:right;font-weight:600}</style></head><body>${profHtml()}<h1>${title}</h1>${secH(repData(per,1))}</body></html>`);
   $("r1").onclick=()=>pdfReport(per);
   $("r2").onclick=async()=>{try{await navigator.clipboard.writeText(UL(profT()+title+"\n\n"+secT(repData(per,1))));alert("Reporte copiado")}catch(e){alert("No pude copiar en esta vista")}};
-  $("b1").onclick=()=>{const bk=JSON.stringify({app:"mi-tambo",v:1,date:new Date().toISOString(),data:{...S,meta:{...S.meta,lastBackup:t}}});
-    dlSave("respaldo-tambo-"+t+".json",bk,()=>{S.meta.lastBackup=t;persist();fRep(per);render()})};
+  $("b1").onclick=bkShare;
   $("b5").onclick=()=>pdfBackup(()=>{S.meta.lastBackup=t;persist();fRep(per);render()});
-  const restore=txt=>{try{const k=txt.indexOf("MITAMBOBK:");if(k>=0){const e2=txt.indexOf(":MITAMBOEND",k);txt=decodeURIComponent(escape(atob(txt.slice(k+10,e2))))}const j=JSON.parse(txt),d=j.data||j;if(!Array.isArray(d.animals))throw 0;
-    if(!confirm("Esto reemplaza los datos actuales de este teléfono por el respaldo ("+d.animals.length+" animales). ¿Continuar?"))return;
-    S={animals:d.animals,events:d.events||[],moves:d.moves||[],repro:d.repro||[],fin:d.fin||[],tools:d.tools||[],milk:d.milk||[],potlog:d.potlog||[],meta:d.meta||{}};save();close();render();alert("Respaldo restaurado")}
-    catch(e){alert("El archivo no parece un respaldo válido de Mi Tambo")}};
-  $("b2").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(restore)};
-  $("b4").onclick=()=>restore($("b3").value);
+  $("b2").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(restoreBk)};
+  $("b4").onclick=()=>restoreBk($("b3").value);
+  kvGet("S_prev").then(v=>{if(v&&$("b4")){const b=document.createElement("button");b.className="s";b.textContent="↩️ Deshacer la última restauración";b.style.marginTop="10px";b.onclick=bkUndo;$("b4").after(b)}}).catch(()=>{});
   $("cx").onclick=close}
 const persist=()=>save();
 function ageP(d){if(!d)return null;const a=new Date(d+"T00:00"),n=new Date();n.setHours(0,0,0,0);if(a>n)return null;let y=n.getFullYear()-a.getFullYear(),m=n.getMonth()-a.getMonth(),x=n.getDate()-a.getDate();if(x<0){m--;x+=new Date(n.getFullYear(),n.getMonth(),0).getDate()}if(m<0){y--;m+=12}return[y,m,x]}
@@ -985,7 +1003,7 @@ function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
   $("act_ok").onclick=async()=>{const v=$("act_t").value.trim(),r=await licCheck(v),e=$("act_e");
     if(r.st==="ok"){const was=L.st==="ok"&&opt;LS("mt_lic",v.replace(/\s+/g,""));LIC=r;a.style.display="none";render();alert(was?"✅ Acceso renovado para "+r.name+(r.exp?"\nAhora tu acceso vence el "+fmt(r.exp)+" ("+r.days+" días)":"\nAhora tu acceso no tiene fecha de vencimiento"):"✅ Acceso activado para "+r.name+(r.exp?"\nVálido hasta el "+fmt(r.exp):"\nSin fecha de vencimiento"));return}
     e.style.display="block";e.textContent=r.st==="dev"?"Este código fue generado para otro teléfono. Enviá el ID que aparece arriba.":r.st==="exp"?"Este código ya venció ("+fmt(r.exp)+"). Pedí uno nuevo.":"Código inválido. Revisá que lo pegaste completo."}}
-const VERS="2026.11.12";
+const VERS="2026.11.14";
 const licCard=()=>{const L=LIC||{};if(L.st!=="ok")return"";return `<div class="card ${L.days!=null&&L.days<=30?"warn":""}"><div class="b">🔑 Acceso activado</div><div class="mu">${esc(L.name)} · ${L.exp?"vence el "+fmt(L.exp)+" ("+L.days+" días)":"sin vencimiento"}</div><div class="mu">ID: ${devFmt(devId())}</div><div class="mu">Versión de la App: <b>${VERS}</b></div><br><button class="s" id="lic_new">🔄 Verificar mi acceso</button></div>`};
 const licWarn=()=>{const L=LIC||{};return L.st==="ok"&&L.days!=null&&L.days<=30?`<div class="card warn" data-lic><div class="b">⏳ Tu acceso vence ${L.days<=0?"hoy":"en "+L.days+" días"}</div><div class="mu" style="color:inherit;opacity:.9">Fecha: ${fmt(L.exp)}. Tocá para verificar tu renovación › </div></div>`:""};
 document.addEventListener("visibilitychange",async()=>{if(document.visibilityState==="visible"&&LIC&&LIC.st==="ok"){await licInit();if(LIC.st!=="ok"){const n=await Promise.race([renCheck(),new Promise(r=>setTimeout(()=>r(null),4000))]);if(n){render();alert(renMsg(n))}else showAct()}else{render();renBg()}}});
@@ -1536,6 +1554,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("[data-milk]")){fLeche(today());return}
   {const ch=e.target.closest("[data-ac]");if(ch){aCat=ch.dataset.ac===aCat?"":ch.dataset.ac;aLim=50;render();return}}
   if(e.target.closest("[data-more]")){aLim+=50;render();return}
+  if(e.target.closest("[data-resp]")){fResp();return}
   if(e.target.closest("[data-al]")){fAlertas();return}
   if(e.target.closest("[data-pl],[data-po],[data-pd],[data-ps],[data-xl],[data-pla]"))aRep=false;
   if(e.target.closest("[data-pla]")){fLactAll();return}
