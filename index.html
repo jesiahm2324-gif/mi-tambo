@@ -1052,7 +1052,7 @@ function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
   $("act_ok").onclick=async()=>{const v=$("act_t").value.trim(),r=await licCheck(v),e=$("act_e");
     if(r.st==="ok"){const was=L.st==="ok"&&opt;LS("mt_lic",v.replace(/\s+/g,""));LIC=r;a.style.display="none";render();alert(was?"✅ Acceso renovado para "+r.name+(r.exp?"\nAhora tu acceso vence el "+fmt(r.exp)+" ("+r.days+" días)":"\nAhora tu acceso no tiene fecha de vencimiento"):"✅ Acceso activado para "+r.name+(r.exp?"\nVálido hasta el "+fmt(r.exp):"\nSin fecha de vencimiento"));return}
     e.style.display="block";e.textContent=r.st==="dev"?"Este código fue generado para otro teléfono. Enviá el ID que aparece arriba.":r.st==="exp"?"Este código ya venció ("+fmt(r.exp)+"). Pedí uno nuevo.":"Código inválido. Revisá que lo pegaste completo."}}
-const VERS="2026.11.22";
+const VERS="2026.11.23";
 const licCard=()=>{const L=LIC||{};if(L.st!=="ok")return"";return `<div class="card ${L.days!=null&&L.days<=30?"warn":""}"><div class="b">🔑 Acceso activado</div><div class="mu">${esc(L.name)} · ${L.exp?"vence el "+fmt(L.exp)+" ("+L.days+" días)":"sin vencimiento"}</div><div class="mu">ID: ${devFmt(devId())}</div><div class="mu">Versión de la App: <b data-ver>${VERS}</b></div>${S.meta.gb?'<div class="mu">🥛 Control de leche con el comprador: <b>activado</b> · <a data-gboff style="text-decoration:underline">desactivar</a></div>':""}<br><button class="s" id="lic_new">🔄 Verificar mi acceso</button></div>`};
 const licWarn=()=>{const L=LIC||{};return L.st==="ok"&&L.days!=null&&L.days<=30?`<div class="card warn" data-lic><div class="b">⏳ Tu acceso vence ${L.days<=0?"hoy":"en "+L.days+" días"}</div><div class="mu" style="color:inherit;opacity:.9">Fecha: ${fmt(L.exp)}. Tocá para verificar tu renovación › </div></div>`:""};
 document.addEventListener("visibilitychange",async()=>{if(document.visibilityState==="visible"&&LIC&&LIC.st==="ok"){await licInit();if(LIC.st!=="ok"){const n=await Promise.race([renCheck(),new Promise(r=>setTimeout(()=>r(null),4000))]);if(n){render();alert(renMsg(n))}else showAct()}else{render();renBg()}}});
@@ -1284,7 +1284,7 @@ function selFind(){const nrm=x=>String(x).toLowerCase().normalize("NFD").replace
       sel.innerHTML="";L.forEach(a=>sel.appendChild(a.el.cloneNode(true)));
       const keep=[...sel.options].find(o=>o.value===cur);if(keep)sel.value=cur;else{sel.selectedIndex=0;sel.dispatchEvent(new Event("change"))}}})}
 function sheet(h){$("shc").innerHTML=UL(h);$("sh").style.display="flex";try{selFind()}catch(e){}setTimeout(()=>{try{selFind()}catch(e){}},0)}
-function close(){$("sh").style.display="none"}
+let DRB=false;function close(){$("sh").style.display="none";if(DRB)setTimeout(()=>{if(DRB&&$("sh").style.display==="none"){DRB=false;drOpen(true)}},80)}
 const P=()=>S.meta.prof||{};
 const pinfo=(p,ph)=>[p.owner,p.loc,ph&&p.phone].filter(Boolean).join(" · ");
 function hdr(){const p=P(),A=act(),c={};A.forEach(x=>c[x.cat]=(c[x.cat]||0)+1);
@@ -1718,9 +1718,9 @@ function dmSheet(k){const m=[...S.moves].sort((a,b)=>b.date.localeCompare(a.date
 function drOpen(o){if(o)drawer();$("dw").classList.toggle("on",!!o)}
 document.addEventListener("click",e=>{
   if(e.target.closest("#mbtn,#nmenu")){e.preventDefault();drOpen(true);return}
-  if(e.target.closest("[data-dx]")){drOpen(false);return}
-  const dm=e.target.closest("[data-dmn]");if(dm){drOpen(false);dmSheet(dm.dataset.dmn);return}
-  if(e.target.closest("#dp [data-t],#dp [data-qa],#dp [data-al],#dp [data-nts],#dp [data-sires],#dp [data-milk],#dp [data-an],#dp [data-rep],#dp [data-tools],#dp [data-prof2],#dp [data-lic]"))drOpen(false)
+  if(e.target.closest("[data-dx]")){DRB=false;drOpen(false);return}
+  const dm=e.target.closest("[data-dmn]");if(dm){drOpen(false);dmSheet(dm.dataset.dmn);DRB=true;return}
+  if(e.target.closest("#dp [data-t],#dp [data-qa],#dp [data-al],#dp [data-nts],#dp [data-sires],#dp [data-milk],#dp [data-an],#dp [data-rep],#dp [data-tools],#dp [data-prof2],#dp [data-lic]")){drOpen(false);DRB=true;setTimeout(()=>{if($("sh").style.display!=="flex")DRB=false},400)}
 },true);
 document.addEventListener("click",e=>{
   {const L=e.target.closest("a");if(L&&!L.dataset.t)return}
