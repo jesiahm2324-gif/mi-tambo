@@ -978,6 +978,15 @@ function geomBars(items,cols,W,H,legend){const pr=[],L=34,B=22,T=legend?32:18,R=
   return {prim:pr,w:W,h:H}}
 function chartSVG(c){return `<svg viewBox="0 0 ${c.w} ${c.h}" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Helvetica,Arial,sans-serif">${c.prim.map(p=>p.k==="r"?`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="${p.c}"/>`:p.k==="p"?`<polygon points="${p.p.map(q=>q.join(",")).join(" ")}" fill="${p.c}"/>`:p.k==="l"?`<line x1="${p.x1}" y1="${p.y1}" x2="${p.x2}" y2="${p.y2}" stroke="${p.c}" stroke-width=".6"/>`:`<text x="${p.x}" y="${p.y}" font-size="${p.s}" text-anchor="${p.a==="m"?"middle":p.a==="e"?"end":"start"}" ${p.c==="#333333"||p.c==="#444444"?`style="fill:#333"`:""}>${esc(p.t)}</text>`).join("")}</svg>`}
 const chartBox=(t,c)=>`<div class="chart"><div class="ct">${esc(t)}</div>${chartSVG(c)}</div>`;
+const dimM=M=>+mEndD(M).slice(8),mAvgD=M=>{const t=today();return M===t.slice(0,7)?+t.slice(8):dimM(M)};
+function wkRows(M){const e=mEndD(M),t=today(),o=[];let w=wkOf(M+"-01");if(w<M+"-01")w=addD(w,7);while(w<=e){const f=addD(w,6);o.push({s:w,f,tot:milkDays(w,f).tot,open:f>=t,fut:w>t});w=addD(w,7)}return o}
+const dm2=d=>d.slice(8)+"/"+d.slice(5,7);
+function milkCmp(M,C){C=C||addM(M+"-01",-1).slice(0,7);const a=wkRows(M),b=wkRows(C),n=Math.max(a.length,b.length),it=[];
+  for(let i=0;i<n;i++)it.push({l:"S"+(i+1)+(a[i]&&a[i].open&&!a[i].fut?"*":""),v:[dm(b[i]?b[i].tot:0),dm(a[i]&&!a[i].fut?a[i].tot:0)]});
+  const ser=mLast(M,12),tt=ser.map(m=>milkDays(m+"-01",mEndD(m)).tot);
+  return {C,a,b,wch:geomBars(it,["#2f6fb5","#2f9d62"],515,170,[mLbl(C),mLbl(M)]),
+    m12:ser.map((m,i)=>({m,tot:tt[i],avg:tt[i]/Math.max(1,mAvgD(m)),dl:i&&tt[i-1]?Math.round((tt[i]-tt[i-1])/tt[i-1]*100):null})),
+    mch:geomBars(ser.map((m,i)=>({l:mLbl(m),v:[dm(tt[i])]})),["#2f6fb5"],515,160)}}
 function analysis(M){
   const F=fem(),st=k=>F.filter(a=>rs(a.id).st===k).length,inM=d=>(d||"").startsWith(M);
   const n=F.length,pre=st("preñada"),srv=st("servida"),vac=st("vacía"),par=st("parida");
@@ -994,21 +1003,78 @@ function analysis(M){
     leche:{cur,prev,avg:cur/Math.max(1,dMonth),delta:prev?Math.round((cur-prev)/prev*100):null,top,ch:geomBars(ser.map((m,i)=>({l:mLbl(m),v:[dm(ml[i])]})),["#2f6fb5"],515,150)},
     fin:{ing:fin[5][0],gas:fin[5][1],net:fin[5][0]-fin[5][1],gcat,ch:geomBars(ser.map((m,i)=>({l:mLbl(m),v:fin[i]})),["#2f9d62","#c0463a"],515,160,["Ingresos","Gastos"])}}}
 const kpi=(l,v,n,tone)=>`<div class="kpi ${tone?"k-"+tone:""}"><div class="kl">${l}</div><div class="kv">${v}</div>${n?`<div class="kn">${n}</div>`:""}</div>`;
-function fAnalisis(M){M=M||today().slice(0,7);const R=analysis(M),r=R.repro,l=R.leche,f=R.fin;
+function fAnalisis(M,CM){M=M||today().slice(0,7);const R=analysis(M),r=R.repro,l=R.leche,f=R.fin;
   const bars=(rows,tot)=>rows.map(x=>`<div class="cr"><span style="flex:0 0 42%;font-size:14px">${esc(x[0])}</span><span class="cb"><i style="width:${Math.round(x[1]/Math.max(1,tot)*100)}%"></i></span><b style="font-size:14px;min-width:60px">${x[2]}</b></div>`).join("");
   sheet(`<h1>📈 Análisis</h1><label>Mes de análisis</label><input type="month" id="an_m" value="${M}">
   <h2>🐄 Reproducción</h2><div class="kg">${kpi("Hembras preñadas",r.pct+"%",r.pre+" de "+r.n+" hembras",r.pct>=50?"g":r.pct>=30?"y":"r")}${kpi("Partos del mes",r.partos,"Servicios: "+r.serv+" · Confirmadas: "+r.conf)}${kpi("Intervalo entre partos",r.ivm?r.ivm.toFixed(1)+" m":"-","Ideal: 12 a 13 meses",r.ivm?(r.ivm<=13.5?"g":r.ivm<=15?"y":"r"):"")}${kpi("Vacías sin preñez",r.vl,"Más de "+(cfg().vac||90)+" días",r.vl?"r":"g")}</div>${chartBox("Estado reproductivo del hato",r.ch)}
-  <h2>🥛 Leche</h2><div class="kg">${kpi("Total del mes",fmtMilk(l.cur),l.delta==null?"":(l.delta>=0?"▲ ":"▼ ")+Math.abs(l.delta)+"% vs mes anterior",l.delta==null?"":l.delta>=0?"g":"r")}${kpi("Promedio diario",fmtMilk(l.avg),"Galones por día")}</div>${chartBox("Galones por mes (últimos 6)",l.ch)}${l.top.length?`<div class="card" style="padding:6px 14px"><div class="b" style="font:600 14px var(--sf);padding:4px 0">Mejores vacas del mes</div>${bars(l.top.map(x=>[nm(x.a),x.g,fmtMilk(x.g)]),l.top[0].g)}</div>`:""}
+  <h2>🥛 Leche</h2><div class="kg">${kpi("Total del mes",fmtMilk(l.cur),l.delta==null?"":(l.delta>=0?"▲ ":"▼ ")+Math.abs(l.delta)+"% vs mes anterior",l.delta==null?"":l.delta>=0?"g":"r")}${kpi("Promedio diario",fmtMilk(l.avg),"Galones por día")}</div>${(()=>{const K=milkCmp(M,CM),td="padding:5px 4px;border-bottom:1px solid var(--bd)",T=(h,r)=>`<div class="card" style="padding:6px 10px"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="color:var(--mu);text-align:left">${h.map(x=>`<th style="padding:4px;font-weight:600">${x}</th>`).join("")}</tr>${r.map(c=>`<tr>${c.map(x=>`<td style="${td}">${x}</td>`).join("")}</tr>`).join("")}</table></div>`;
+    const arr=x=>x==null?"-":(x>=0?"▲ ":"▼ ")+Math.abs(x)+"%";
+    return `<label>Comparar las semanas de ${mLbl(M)} contra</label><input type="month" id="an_c" value="${K.C}">${chartBox("Leche por semana (vie a jue)",K.wch)}${T(["Semana","Total",mLbl(K.C),"Dif."],K.a.map((w,i)=>{const o=K.b[i],d=(o&&o.tot&&!w.fut)?Math.round((w.tot-o.tot)/o.tot*100):null;return [`S${i+1} ${dm2(w.s)}${w.open&&!w.fut?" *":""}`,w.fut?"-":fmtMilk(w.tot),o?fmtMilk(o.tot):"-",w.fut?"-":arr(d)]}))}<p class="mu" style="margin:4px 2px 12px">* Semana en curso: todavía le faltan días, por eso se ve más baja.</p>${chartBox("Leche por mes (últimos 12 meses)",K.mch)}${T(["Mes","Total","Prom./día","vs ant."],K.m12.slice().reverse().map(x=>[mLong(x.m).replace(" de "," "),fmtMilk(x.tot),fmtMilk(x.avg),arr(x.dl)]))}`})()}${l.top.length?`<div class="card" style="padding:6px 14px"><div class="b" style="font:600 14px var(--sf);padding:4px 0">Mejores vacas del mes</div>${bars(l.top.map(x=>[nm(x.a),x.g,fmtMilk(x.g)]),l.top[0].g)}</div>`:""}
   <h2>💰 Finanzas</h2><div class="kg">${kpi("Ingresos",money(f.ing),mLong(M),"g")}${kpi("Gastos",money(f.gas),mLong(M),"r")}</div>${kpi(f.net>=0?"Utilidad":"Pérdida",money(f.net),"",f.net>=0?"g":"r")}<div style="height:10px"></div>${chartBox("Ingresos vs gastos (últimos 6 meses)",f.ch)}${f.gcat.length?`<div class="card" style="padding:6px 14px"><div class="b" style="font:600 14px var(--sf);padding:4px 0">Gastos por cuenta</div>${bars(f.gcat.map(x=>[x[0],x[1],money(x[1])]),f.gcat[0][1])}</div>`:""}
   <br><button id="an_pdf">📄 Informe mensual en PDF</button><br><br><button class="s" id="cx">Cerrar</button>`);
-  $("an_m").onchange=()=>{if($("an_m").value)fAnalisis($("an_m").value)};$("an_pdf").onclick=()=>pdfInforme(M);$("cx").onclick=close}
-function pdfInforme(M){const R=analysis(M),r=R.repro,l=R.leche,f=R.fin,A=act(),c={};A.forEach(a=>c[a.cat]=(c[a.cat]||0)+1);const X=[40,330],row=(a,b)=>({c:[a,String(b)],x:X,sz:10});
+  $("an_m").onchange=()=>{if($("an_m").value)fAnalisis($("an_m").value)};if($("an_c"))$("an_c").onchange=()=>{if($("an_c").value)fAnalisis(M,$("an_c").value)};$("an_pdf").onclick=()=>pdfInforme(M,CM);$("cx").onclick=close}
+function pdfInforme(M,CM){const R=analysis(M),K=milkCmp(M,CM),r=R.repro,l=R.leche,f=R.fin,A=act(),c={};A.forEach(a=>c[a.cat]=(c[a.cat]||0)+1);const X=[40,330],row=(a,b)=>({c:[a,String(b)],x:X,sz:10});
   const it=[...pdfHead("Informe mensual - "+mLong(M)),...pdfSec("Resumen del hato"),row("Total de animales",A.length),...CATS.filter(k=>c[k]).map(k=>row("   "+k,c[k])),
   ...pdfSec("Reproducción"),row("Hembras en el hato",r.n),row("Preñadas",r.pre+" ("+r.pct+"%)"),row("Servidas sin diagnóstico",r.srv),row("Vacías",r.vac),row("Paridas",r.par),row("Partos del mes",r.partos),row("Servicios del mes",r.serv),row("Preñeces confirmadas en el mes",r.conf),row("Intervalo promedio entre partos",r.ivm?r.ivm.toFixed(1)+" meses":"sin datos"),row("Vacías largas sin preñez",r.vl),{chart:r.ch,keep:1},
   ...pdfSec("Producción de leche"),row("Total del mes",fmtMilk(l.cur)),row("Promedio diario",fmtMilk(l.avg)),row("Mes anterior",fmtMilk(l.prev)),...(l.top.length?[{c:["Mejores vacas del mes"],b:1,sz:9},...l.top.map(x=>row("   "+nm(x.a),fmtMilk(x.g)))]:[]),{chart:l.ch,keep:1},
+  ...pdfSec("Leche semana por semana (vie a jue) - "+mLbl(M)+" contra "+mLbl(K.C)),{chart:K.wch,keep:1},{c:["Semana","Total "+mLbl(M),"Total "+mLbl(K.C),"Diferencia"],x:[40,170,300,430],b:1,sz:9},...K.a.map((w,i)=>{const o=K.b[i],d=(o&&o.tot&&!w.fut)?Math.round((w.tot-o.tot)/o.tot*100):null;return {c:["S"+(i+1)+"  "+dm2(w.s)+" al "+dm2(w.f)+(w.open&&!w.fut?" *":""),w.fut?"-":fmtMilk(w.tot),o?fmtMilk(o.tot):"-",d==null?"-":(d>=0?"+":"")+d+"%"],x:[40,170,300,430],sz:9}}),{c:["* Semana en curso: todavia le faltan dias."],sz:8},
+  ...pdfSec("Leche mes contra mes (ultimos 12 meses)"),{chart:K.mch,keep:1},{c:["Mes","Total","Promedio por dia","Contra mes anterior"],x:[40,170,300,430],b:1,sz:9},...K.m12.slice().reverse().map(x=>({c:[mLong(x.m),fmtMilk(x.tot),fmtMilk(x.avg),x.dl==null?"-":(x.dl>=0?"+":"")+x.dl+"%"],x:[40,170,300,430],sz:9})),
   ...pdfSec("Finanzas del mes"),row("Ingresos",money(f.ing)),row("Gastos",money(f.gas)),row(f.net>=0?"Utilidad":"Pérdida",money(f.net)),...f.gcat.map(x=>row("   Gasto: "+x[0],money(x[1]))),{chart:f.ch,keep:1},
   ...pdfSec("Plan de vacunas y alertas"),...(alerts().filter(x=>!["lic","baja","desc","descp","evr","evo"].includes(x.k)).length?alerts().filter(x=>!["lic","baja","desc","descp","evr","evo"].includes(x.k)).slice(0,25).map(x=>({c:[(x.t||"").replace(/[^\x20-\x7e\xa0-\xff]/g,"")+" ",x.k==="vacia"?"Vacía":fmt(x.d)],x:[40,400],sz:9})):[{c:["Sin alertas pendientes"],sz:9}])];
   sharePDF("informe-"+M+".pdf",it)}
+
+/* ===== Liquidación laboral (Código del Trabajo de Nicaragua: arts. 45, 76 y 93) ===== */
+const LQ_F={m:["Mensual",1],q:["Quincenal",2],s:["Semanal",30/7],d:["Diario",30]};
+const dIM=(y,m)=>new Date(y,m,0).getDate();
+function ydiff(a,b){const A=a.split("-").map(Number),B=b.split("-").map(Number);let y=B[0]-A[0],m=B[1]-A[1],d=B[2]-A[2];if(d<0){m--;const pm=B[1]-1<1?12:B[1]-1,py=B[1]-1<1?B[0]-1:B[0];d+=dIM(py,pm)}if(m<0){y--;m+=12}return {y,m,d,tm:y*12+m+d/30}}
+const ydTxt=x=>[x.y?x.y+(x.y===1?" año":" años"):"",x.m?x.m+(x.m===1?" mes":" meses"):"",x.d?x.d+(x.d===1?" día":" días"):""].filter(Boolean).join(", ")||"0 días";
+const lqSal=p=>{const v=+p.salary||0,f=LQ_F[p.salFreq||"m"]||LQ_F.m;return v*f[1]};
+function liq(p,t){t=t||today();if(!p.start||!(+p.salary>0)||p.start>t)return null;
+  const sal=lqSal(p),dia=sal/30,a=ydiff(p.start,t),yrs=a.tm/12;
+  const iM=Math.min(yrs,3),iD=Math.max(yrs-3,0)*20;let ind=sal*iM+dia*iD;const cap=ind>5*sal;ind=Math.min(Math.max(ind,sal),5*sal);
+  const dev=a.tm*2.5,tom=+p.vacDays||0,vp=Math.max(0,dev-tom),vac=vp*dia;
+  let from=p.start;if(p.agDone&&p.agDone>=p.start){from=addD(p.agDone,1)}
+  const g=from>t?{y:0,m:0,d:0,tm:0}:ydiff(from,t),gm=Math.min(12,g.tm),ag=sal*gm/12;
+  const yr=+t.slice(0,4),agDue=(t>=yr+"-12-01"?yr+1:yr)+"-12-10";
+  return {sal,dia,a,yrs,iM,iD,ind,cap,dev,tom,vp,vac,from,g,gm,ag,agDue,tot:ind+vac+ag}}
+const lqWk=()=>(S.meta.people||[]).filter(p=>p.kind==="Trabajador");
+function lqSum(){const W=lqWk().map(p=>liq(p)).filter(Boolean);return W.length?{n:W.length,tot:W.reduce((x,y)=>x+y.tot,0)}:null}
+function fLiq(){const W=lqWk();
+  sheet(`<h1>🧾 Liquidación laboral</h1><p class="mu">Se calcula con la fecha de hoy cada vez que abrís esta pantalla, según el Código del Trabajo de Nicaragua.</p>${W.length?W.map(p=>{const r=liq(p);return `<div class="card sv" data-lq="${p.id}"><div class="sx"><div class="row"><span class="b">${esc(p.name)}</span><b>${r?money(r.tot,2):"Faltan datos"}</b></div><div class="mu">${p.role?esc(p.role)+" · ":""}${r?"Antigüedad: "+ydTxt(r.a):"Tocá para poner fecha de ingreso y salario"}</div></div></div>`}).join(""):'<p class="mu">Todavía no tenés trabajadores registrados.</p>'}<br><button id="lq_add" class="s">+ Agregar trabajador</button><br><br><button class="s" id="cx">Cerrar</button>`);
+  document.querySelectorAll("[data-lq]").forEach(c=>c.onclick=()=>{const p=W.find(x=>x.id===c.dataset.lq);liq(p)?fLiqD(p):fLiqE(p)});
+  $("lq_add").onclick=()=>fPerson("Trabajador");$("cx").onclick=close}
+function fLiqE(p){const y=+today().slice(0,4),sug=(today()>=y+"-11-30"?y:y-1)+"-11-30";
+  sheet(`<h1>✏️ Datos laborales</h1><p class="mu">${esc(p.name)}</p>
+  <label>Fecha de ingreso</label><input type="date" id="lq_s" value="${p.start||""}">
+  <label>Salario que le pagás</label><input id="lq_v" inputmode="decimal" value="${p.salary||""}" placeholder="Ej. 6500">
+  <label>Cada cuánto se lo pagás</label><select id="lq_f">${Object.entries(LQ_F).map(([k,v])=>`<option value="${k}" ${(p.salFreq||"m")===k?"selected":""}>${v[0]}</option>`).join("")}</select>
+  <label>Aguinaldo pagado hasta el día</label><input type="date" id="lq_a" value="${p.agDone||""}"><p class="mu" style="margin:-4px 0 10px">El ciclo del aguinaldo va del 1 de diciembre al 30 de noviembre. Si ya pagaste todos los años anteriores, poné <a href="#" id="lq_sg">${fmt(sug)}</a>. Si no pusiste fecha, se cuenta desde el ingreso.</p>
+  <label>Días de vacaciones ya disfrutados o pagados</label><input id="lq_d" inputmode="decimal" value="${p.vacDays||0}"><p class="mu" style="margin:-4px 0 10px">Se acumulan 2.5 días por cada mes trabajado (30 por año).</p>
+  <button id="ok">Guardar</button><br><br><button class="s" id="cx">Cancelar</button>`);
+  $("lq_sg").onclick=e=>{e.preventDefault();$("lq_a").value=sug};
+  $("ok").onclick=()=>{const st=$("lq_s").value,v=parseFloat(String($("lq_v").value).replace(",","."));if(!st)return alert("Falta la fecha de ingreso");if(!(v>0))return alert("Falta el salario");
+    p.start=st;p.salary=v;p.salFreq=$("lq_f").value;p.agDone=$("lq_a").value||"";p.vacDays=Math.max(0,parseFloat(String($("lq_d").value).replace(",","."))||0);save();fLiqD(p)};
+  $("cx").onclick=()=>liq(p)?fLiqD(p):fLiq()}
+function fLiqD(p,mot){mot=mot||"si";const r=liq(p);if(!r)return fLiqE(p);const ind=mot==="si"?r.ind:0,tot=ind+r.vac+r.ag,R=(t,sub,v,cl)=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--bd);align-items:flex-start"><div><div class="b" style="font-size:15px">${t}</div><div class="mu" style="font-size:12.5px">${sub}</div></div><b style="${cl||""}">${money(v,2)}</b></div>`;
+  sheet(`<h1>🧾 ${esc(p.name)}</h1><p class="mu">Cálculo al ${fmt(today())} · Ingreso: ${fmt(p.start)}<br>Antigüedad: <b>${ydTxt(r.a)}</b><br>Salario mensual: ${money(r.sal,2)} · Valor de un día: ${money(r.dia,2)}</p>
+  <label>Si termina la relación por</label><select id="lq_m"><option value="si" ${mot==="si"?"selected":""}>Renuncia o despido sin causa justa</option><option value="no" ${mot==="no"?"selected":""}>Despido con causa justa o contrato vencido</option></select>
+  ${R("Indemnización por antigüedad (art. 45)",mot==="si"?`${r.iM.toFixed(2)} meses de salario${r.iD>0?" + "+r.iD.toFixed(1)+" días":""}${r.cap?" · tope de 5 meses":""}`:"No corresponde en este caso",ind)}
+  ${R("Vacaciones pendientes (art. 76)",`${r.vp.toFixed(1)} días (ganó ${r.dev.toFixed(1)}${r.tom?", ya tomó o cobró "+r.tom:""})`,r.vac)}
+  ${R("Aguinaldo pendiente (art. 93)",`${r.gm.toFixed(2)} meses desde ${fmt(r.from)}${r.agDue?" · se paga a más tardar el "+fmt(r.agDue):""}`,r.ag)}
+  <div class="row" style="padding:12px 0"><b style="font-size:17px">Total a pagar hoy</b><b style="font-size:20px;color:var(--ac)">${money(tot,2)}</b></div>
+  <p class="mu" style="font-size:12px">Es un cálculo de referencia. La indemnización no puede ser menor de 1 mes ni mayor de 5. Las vacaciones se pagan con el salario ordinario promedio de los últimos 6 meses. Confirmá el caso con el MITRAB o un abogado laboral antes de pagar.</p>
+  <button id="lq_ag">💵 Registrar que pagué el aguinaldo</button><br><br><button class="s" id="lq_va">🏖️ Registrar vacaciones disfrutadas o pagadas</button><br><br><button class="s" id="lq_pdf">📄 Hoja de liquidación en PDF</button><br><br><button class="s" id="lq_ed">✏️ Cambiar datos laborales</button><br><br><button class="s" id="lq_bk">Volver a la lista</button>`);
+  $("lq_m").onchange=()=>fLiqD(p,$("lq_m").value);
+  $("lq_ag").onclick=()=>{const t=today(),y=+t.slice(0,4),h=t>=y+"-12-01"?y+"-11-30":t;if(confirm("¿Registrar que pagaste el aguinaldo hasta el "+fmt(h)+"?")){p.agDone=h;save();fLiqD(p,mot)}};
+  $("lq_va").onclick=()=>{const v=parseFloat(String(prompt("¿Cuántos días de vacaciones disfrutó o le pagaste?")||"").replace(",","."));if(v>0){p.vacDays=(+p.vacDays||0)+v;save();fLiqD(p,mot)}};
+  $("lq_pdf").onclick=()=>pdfLiq(p,mot);$("lq_ed").onclick=()=>fLiqE(p);$("lq_bk").onclick=fLiq}
+function pdfLiq(p,mot){const r=liq(p);if(!r)return;const ind=mot==="si"?r.ind:0,tot=ind+r.vac+r.ag,X=[40,330],row=(a,b,o)=>Object.assign({c:[a,b],x:X,sz:10},o||{}),M=v=>money(v,2).replace(/[^\x20-\x7e]/g,"");
+  const it=[...pdfHead("Liquidacion laboral - "+(p.name||"")),...pdfSec("Datos del trabajador"),row("Trabajador",p.name||""),...(p.cedula?[row("Cedula",p.cedula)]:[]),row("Fecha de ingreso",fmt(p.start)),row("Fecha de calculo",fmt(today())),row("Antiguedad",ydTxt(r.a).replace(/ñ/g,"n").replace(/í/g,"i")),row("Salario mensual",M(r.sal)),row("Valor de un dia",M(r.dia)),
+  ...pdfSec("Calculo"),row("Indemnizacion por antiguedad (art. 45)"+(mot==="si"?"":" - no corresponde"),M(ind)),...(mot==="si"?[{c:["   "+r.iM.toFixed(2)+" meses de salario"+(r.iD>0?" + "+r.iD.toFixed(1)+" dias":"")+(r.cap?" (tope de 5 meses)":"")],sz:9}]:[]),
+  row("Vacaciones pendientes (art. 76)",M(r.vac)),{c:["   "+r.vp.toFixed(1)+" dias pendientes de "+r.dev.toFixed(1)+" ganados"+(r.tom?" (ya tomo o cobro "+r.tom+")":"")],sz:9},
+  row("Aguinaldo pendiente (art. 93)",M(r.ag)),{c:["   "+r.gm.toFixed(2)+" meses desde "+fmt(r.from)],sz:9},
+  {c:[""],sz:6},row("TOTAL A PAGAR",M(tot),{b:1,sz:12}),{c:[""],sz:20},{c:["Calculo de referencia segun el Codigo del Trabajo de Nicaragua. Confirmar con el MITRAB o un abogado laboral."],sz:8},{c:[""],sz:30},{c:["______________________________          ______________________________"],sz:10},{c:["   Firma del empleador                                          Firma del trabajador (recibi conforme)"],sz:9}];
+  sharePDF("liquidacion-"+String(p.name||"trabajador").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-")+"-"+today()+".pdf",it)}
 
 /* ===== Licencia / activación ===== */
 const PUBK={"kty": "EC", "crv": "P-256", "x": "5KgEFPis3DHEpfHboTJSAIN9N7BgrAF53p3MncLovqU", "y": "DHbX3Zo7Q5j_0lfRXakjDEzRz40JBgjwXMCsyrLPZWo"};
@@ -1052,7 +1118,7 @@ function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
   $("act_ok").onclick=async()=>{const v=$("act_t").value.trim(),r=await licCheck(v),e=$("act_e");
     if(r.st==="ok"){const was=L.st==="ok"&&opt;LS("mt_lic",v.replace(/\s+/g,""));LIC=r;a.style.display="none";render();alert(was?"✅ Acceso renovado para "+r.name+(r.exp?"\nAhora tu acceso vence el "+fmt(r.exp)+" ("+r.days+" días)":"\nAhora tu acceso no tiene fecha de vencimiento"):"✅ Acceso activado para "+r.name+(r.exp?"\nVálido hasta el "+fmt(r.exp):"\nSin fecha de vencimiento"));return}
     e.style.display="block";e.textContent=r.st==="dev"?"Este código fue generado para otro teléfono. Enviá el ID que aparece arriba.":r.st==="exp"?"Este código ya venció ("+fmt(r.exp)+"). Pedí uno nuevo.":"Código inválido. Revisá que lo pegaste completo."}}
-const VERS="2026.11.24";
+const VERS="2026.11.25";
 const licCard=()=>{const L=LIC||{};if(L.st!=="ok")return"";return `<div class="card ${L.days!=null&&L.days<=30?"warn":""}"><div class="b">🔑 Acceso activado</div><div class="mu">${esc(L.name)} · ${L.exp?"vence el "+fmt(L.exp)+" ("+L.days+" días)":"sin vencimiento"}</div><div class="mu">ID: ${devFmt(devId())}</div><div class="mu">Versión de la App: <b data-ver>${VERS}</b></div>${S.meta.gb?'<div class="mu">🥛 Control de leche con el comprador: <b>activado</b> · <a data-gboff style="text-decoration:underline">desactivar</a></div>':""}<br><button class="s" id="lic_new">🔄 Verificar mi acceso</button></div>`};
 const licWarn=()=>{const L=LIC||{};return L.st==="ok"&&L.days!=null&&L.days<=30?`<div class="card warn" data-lic><div class="b">⏳ Tu acceso vence ${L.days<=0?"hoy":"en "+L.days+" días"}</div><div class="mu" style="color:inherit;opacity:.9">Fecha: ${fmt(L.exp)}. Tocá para verificar tu renovación › </div></div>`:""};
 document.addEventListener("visibilitychange",async()=>{if(document.visibilityState==="visible"&&LIC&&LIC.st==="ok"){await licInit();if(LIC.st!=="ok"){const n=await Promise.race([renCheck(),new Promise(r=>setTimeout(()=>r(null),4000))]);if(n){render();alert(renMsg(n))}else showAct()}else{render();renBg()}}});
@@ -1706,6 +1772,8 @@ function drawer(){const p=P(),A=act(),L=alerts(),inv=invRows("mes"),m=[...S.move
   ${I("data-an",["#e0b955","#a8832f","#6b5218","chart"],"Análisis e indicadores")}
   ${I("data-rep",["#3b8f6a","#1f5a43","#123226","file"],"Reportes y respaldo",lb?"Respaldo: "+fmt(lb):"Sin respaldo aún")}
   ${I("data-tools",["#e58f5b","#b4531f","#7a3611","tool"],"Herramientas",S.tools.length+" registradas")}
+  <h4>Trabajadores</h4>
+  ${(()=>{const q=lqSum();return I("data-liq",["#6aa9e8","#2f6fb5","#1b4478","billete"],"Liquidación laboral",q?`${q.n} trabajador${q.n>1?"es":""} · hoy ${money(q.tot,2)}`:"Calculada con la ley de Nicaragua")})()}
   <h4>Cuenta</h4>
   ${I("data-prof2",["#3b8f6a","#1f5a43","#123226","establo"],"Perfil de la finca")}${I("data-lic",["#a8832f","#7c5a10","#4a3508","shield"],"Mi acceso y versión","Versión "+VERS)}`;
   const nb=$("mbtn");if(nb){const u=L.length;nb.innerHTML="☰"+(u?`<i>${u}</i>`:"")}}
@@ -1722,6 +1790,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#mbtn,#nmenu")){e.preventDefault();drOpen(true);return}
   if(e.target.closest("[data-dx]")){DRB=false;drOpen(false);return}
   const dm=e.target.closest("[data-dmn]");if(dm){drOpen(false);dmSheet(dm.dataset.dmn);DRB=true;return}
+  if(e.target.closest("#dp [data-liq]")){drOpen(false);fLiq();DRB=true;return}
   if(e.target.closest("#dp [data-t],#dp [data-qa],#dp [data-al],#dp [data-nts],#dp [data-sires],#dp [data-milk],#dp [data-an],#dp [data-rep],#dp [data-tools],#dp [data-prof2],#dp [data-lic]")){drOpen(false);DRB=true;setTimeout(()=>{if($("sh").style.display!=="flex")DRB=false},400)}
 },true);
 document.addEventListener("click",e=>{
