@@ -36,7 +36,7 @@ nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:color-mix(in 
 nav a{flex:1;text-align:center;padding:7px 0 6px;font-size:11px;color:var(--mu);text-decoration:none;position:relative}
 nav a b{display:block;font-size:20px;filter:grayscale(1);opacity:.65}
 nav a.on{color:var(--pr);font-weight:700}nav a.on b{filter:none;opacity:1}
-.cwi{width:40px;height:30px;border-radius:11px;background:rgba(243,248,239,.5);display:flex;align-items:center;justify-content:center;opacity:.7}.cwi img{width:32px;height:auto;display:block}nav a.on .cwi{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--pr) 55%,transparent)}
+.cwi{width:28px;height:24px;display:flex;align-items:center;justify-content:center;opacity:.7}.cwi img{height:23px;width:auto;display:block;filter:drop-shadow(0 0 1px rgba(255,255,255,.85))}nav a.on .cwi{opacity:1}
 nav a.on::after{content:"";position:absolute;left:30%;right:30%;bottom:0;height:2px;border-radius:2px;background:var(--ac)}
 .fab{position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom,0px));width:auto;border-radius:30px;padding:14px 22px;background:var(--ac);color:#1a1405;box-shadow:0 8px 20px -6px #0006;z-index:4}
 #sh{position:fixed;inset:0;background:#0a120d99;display:none;align-items:flex-end;z-index:9}
@@ -1176,7 +1176,7 @@ function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
   $("act_ok").onclick=async()=>{const v=$("act_t").value.trim(),r=await licCheck(v),e=$("act_e");
     if(r.st==="ok"){const was=L.st==="ok"&&opt;LS("mt_lic",v.replace(/\s+/g,""));LIC=r;a.style.display="none";render();alert(was?"✅ Acceso renovado para "+r.name+(r.exp?"\nAhora tu acceso vence el "+fmt(r.exp)+" ("+r.days+" días)":"\nAhora tu acceso no tiene fecha de vencimiento"):"✅ Acceso activado para "+r.name+(r.exp?"\nVálido hasta el "+fmt(r.exp):"\nSin fecha de vencimiento"));return}
     e.style.display="block";e.textContent=r.st==="dev"?"Este código fue generado para otro teléfono. Enviá el ID que aparece arriba.":r.st==="exp"?"Este código ya venció ("+fmt(r.exp)+"). Pedí uno nuevo.":"Código inválido. Revisá que lo pegaste completo."}}
-const VERS="2026.11.31";
+const VERS="2026.11.32";
 const licCard=()=>{const L=LIC||{};if(L.st!=="ok")return"";return `<div class="card ${L.days!=null&&L.days<=30?"warn":""}"><div class="b">🔑 Acceso activado</div><div class="mu">${esc(L.name)} · ${L.exp?"vence el "+fmt(L.exp)+" ("+L.days+" días)":"sin vencimiento"}</div><div class="mu">ID: ${devFmt(devId())}</div><div class="mu">Versión de la App: <b data-ver>${VERS}</b></div>${S.meta.gb?'<div class="mu">🥛 Control de leche con el comprador: <b>activado</b> · <a data-gboff style="text-decoration:underline">desactivar</a></div>':""}<br><button class="s" id="lic_new">🔄 Verificar mi acceso</button></div>`};
 const licWarn=()=>{const L=LIC||{};return L.st==="ok"&&L.days!=null&&L.days<=30?`<div class="card warn" data-lic><div class="b">⏳ Tu acceso vence ${L.days<=0?"hoy":"en "+L.days+" días"}</div><div class="mu" style="color:inherit;opacity:.9">Fecha: ${fmt(L.exp)}. Tocá para verificar tu renovación › </div></div>`:""};
 document.addEventListener("visibilitychange",async()=>{if(document.visibilityState==="visible"&&LIC&&LIC.st==="ok"){await licInit();if(LIC.st!=="ok"){const n=await Promise.race([renCheck(),new Promise(r=>setTimeout(()=>r(null),4000))]);if(n){render();alert(renMsg(n))}else showAct()}else{render();renBg()}}});
