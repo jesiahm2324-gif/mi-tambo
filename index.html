@@ -1175,7 +1175,7 @@ function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
   $("act_ok").onclick=async()=>{const v=$("act_t").value.trim(),r=await licCheck(v),e=$("act_e");
     if(r.st==="ok"){const was=L.st==="ok"&&opt;LS("mt_lic",v.replace(/\s+/g,""));LIC=r;a.style.display="none";render();alert(was?"✅ Acceso renovado para "+r.name+(r.exp?"\nAhora tu acceso vence el "+fmt(r.exp)+" ("+r.days+" días)":"\nAhora tu acceso no tiene fecha de vencimiento"):"✅ Acceso activado para "+r.name+(r.exp?"\nVálido hasta el "+fmt(r.exp):"\nSin fecha de vencimiento"));return}
     e.style.display="block";e.textContent=r.st==="dev"?"Este código fue generado para otro teléfono. Enviá el ID que aparece arriba.":r.st==="exp"?"Este código ya venció ("+fmt(r.exp)+"). Pedí uno nuevo.":"Código inválido. Revisá que lo pegaste completo."}}
-const VERS="2026.11.34";
+const VERS="2026.11.35";
 const licCard=()=>{const L=LIC||{};if(L.st!=="ok")return"";return `<div class="card ${L.days!=null&&L.days<=30?"warn":""}"><div class="b">🔑 Acceso activado</div><div class="mu">${esc(L.name)} · ${L.exp?"vence el "+fmt(L.exp)+" ("+L.days+" días)":"sin vencimiento"}</div><div class="mu">ID: ${devFmt(devId())}</div><div class="mu">Versión de la App: <b data-ver>${VERS}</b></div>${S.meta.gb?'<div class="mu">🥛 Control de leche con el comprador: <b>activado</b> · <a data-gboff style="text-decoration:underline">desactivar</a></div>':""}<br><button class="s" id="lic_new">🔄 Verificar mi acceso</button></div>`};
 const licWarn=()=>{const L=LIC||{};return L.st==="ok"&&L.days!=null&&L.days<=30?`<div class="card warn" data-lic><div class="b">⏳ Tu acceso vence ${L.days<=0?"hoy":"en "+L.days+" días"}</div><div class="mu" style="color:inherit;opacity:.9">Fecha: ${fmt(L.exp)}. Tocá para verificar tu renovación › </div></div>`:""};
 document.addEventListener("visibilitychange",async()=>{if(document.visibilityState==="visible"&&LIC&&LIC.st==="ok"){await licInit();if(LIC.st!=="ok"){const n=await Promise.race([renCheck(),new Promise(r=>setTimeout(()=>r(null),4000))]);if(n){render();alert(renMsg(n))}else showAct()}else{render();renBg()}}});
@@ -1830,7 +1830,7 @@ function drawer(){const p=P(),A=act(),L=alerts(),inv=invRows("mes"),m=[...S.move
   ${I("data-an",["#e0b955","#a8832f","#6b5218","chart"],"Análisis e indicadores")}
   ${I("data-rep",["#3b8f6a","#1f5a43","#123226","file"],"Reportes y respaldo",lb?"Respaldo: "+fmt(lb):"Sin respaldo aún")}
   ${I("data-tools",["#e58f5b","#b4531f","#7a3611","tool"],"Herramientas",S.tools.length+" registradas")}
-  ${I("data-plano",["#3b8f6a","#1f5a43","#123226","home"],"Plano de la finca",(S.meta.plano&&S.meta.plano.mode==="der"&&S.meta.plano.txt)?"Lote registrado":"Área, potreros y alambre")}
+  ${I("data-plano",["#3b8f6a","#1f5a43","#123226","home"],"Planos de la finca",plAll().length?plAll().length+" registrado"+(plAll().length>1?"s":""):"Área, potreros y alambre")}
   <h4>Trabajadores</h4>
   ${(()=>{const q=lqSum();return I("data-liq",["#6aa9e8","#2f6fb5","#1b4478","billete"],"Liquidación laboral",q?`${q.n} trabajador${q.n>1?"es":""} · hoy ${money(q.tot,2)}`:"Calculada con la ley de Nicaragua")})()}
   <h4>Cuenta</h4>
@@ -1839,7 +1839,8 @@ function drawer(){const p=P(),A=act(),L=alerts(),inv=invRows("mes"),m=[...S.move
 
 /* ===== Plano de la finca ===== */
 const PL_MZ=6987,PLD={mode:"der",name:"",txt:"",lg:100,an:50,ha:"",rest:33,occ:3,an_n:"",kg:400,lay:"auto",n:"",lane:5,orient:0,east:0,str:3,sp:8,waste:10,roll:400,gates:"",per:1};
-const plGet=()=>Object.assign({},PLD,S.meta.plano||{});
+const plAll=()=>{if(!Array.isArray(S.meta.planos))S.meta.planos=[];if(S.meta.plano){S.meta.planos.push({id:uid(),...S.meta.plano});delete S.meta.plano}return S.meta.planos};
+const plCur=()=>plAll().find(x=>x.id===S.meta.planoSel)||null,plGet=()=>Object.assign({},PLD,plCur()||{});
 function plParse(txt){const R=[],bad=[];String(txt||"").split(/\n/).forEach((ln,i)=>{if(!ln.trim())return;
   let s=ln.replace(/,/g,".").replace(/[°º˚'’′"″”“]/g," ").replace(/([NSEWOnsewo])(?=[\d.])/g,"$1 ").replace(/([\d.])(?=[NSEWOnsewo])/g,"$1 ");
   const t=s.split(/\s+/).filter(x=>x&&!/^\d+\s*-\s*\d+$/.test(x)&&!/^(m|mts?|metros)$/i.test(x));
@@ -1921,9 +1922,14 @@ function plOut(){const p=plGet(),sh=plShape(p),box=$("pl_out");if(!box)return;co
   else if(sh.info.only)h+=`<p class="mu">Con solo el área no se puede dibujar. Si querés el dibujo y el alambre, usá los lados del plano o un rectángulo.</p>`;
   box.innerHTML=h;
   if($("pl_pdf")){const d=plDesign(sh,p),m=plMat(d,sh,p);$("pl_pdf").onclick=()=>sharePDF("plano-finca-"+today()+".pdf",plRep(sh,d,m,p));$("pl_png").onclick=()=>plPng(sh,d)}}
-function fPlano(){const p=plGet(),sel=(id,v,o)=>`<select id="${id}">${o.map(x=>`<option value="${x[0]}" ${String(v)===String(x[0])?"selected":""}>${x[1]}</option>`).join("")}</select>`,inp=(id,v,ph,w)=>`<input id="${id}" inputmode="decimal" value="${esc(v==null?"":v)}" placeholder="${ph||""}">`;
-  sheet(`<h1>🗺️ Plano de la finca</h1><p class="mu">Calculá el área de tu terreno, cuántos potreros sacar para pastoreo rotacional y cuánto alambre necesitás. Tus datos se guardan solo en este teléfono.</p>
-  <label>Nombre del terreno (opcional)</label><input id="pl_nm" value="${esc(p.name)}" placeholder="Ej. Lote de 5 manzanas">
+function plNm(q){return q.name||"Plano sin nombre"}
+function fPlano(){const L=plAll(),mz=v=>(v/PL_MZ).toFixed(2);
+  sheet(`<h1>🗺️ Planos de la finca</h1><p class="mu">Guardá varios terrenos y calculá en cada uno el área, los potreros y el alambre. Tus datos se guardan solo en este teléfono.</p>${L.length?L.map(q=>{const p=Object.assign({},PLD,q),sh=plShape(p),n=sh.area?(Math.round(+p.n||plSuggest(p)||0)):0;return `<div class="card sv" data-pl="${q.id}"><div class="sx"><div class="row"><span class="b">${esc(plNm(q))}</span><b>${sh.area?mz(sh.area)+" mz":"Sin área"}</b></div><div class="mu">${sh.area?(n?n+" potreros · ":"")+Math.round(sh.area).toLocaleString("es-NI")+" m²":"Tocá para registrar el terreno"}</div></div></div>`}).join(""):'<p class="mu">Todavía no tenés planos.</p>'}<button id="pl_new">+ Nuevo plano</button><br><br><button class="s" id="cx">Cerrar</button>`);
+  document.querySelectorAll("[data-pl]").forEach(c=>c.onclick=()=>{S.meta.planoSel=c.dataset.pl;save();fPlanoEd()});
+  $("pl_new").onclick=()=>{const q={id:uid(),name:"Plano "+(L.length+1)};L.push(q);S.meta.planoSel=q.id;save();fPlanoEd()};$("cx").onclick=()=>{close();render()}}
+function fPlanoEd(){if(!plCur())return fPlano();const p=plGet(),sel=(id,v,o)=>`<select id="${id}">${o.map(x=>`<option value="${x[0]}" ${String(v)===String(x[0])?"selected":""}>${x[1]}</option>`).join("")}</select>`,inp=(id,v,ph,w)=>`<input id="${id}" inputmode="decimal" value="${esc(v==null?"":v)}" placeholder="${ph||""}">`;
+  sheet(`<h1>🗺️ ${esc(plNm(p))}</h1><p class="mu">Calculá el área del terreno, cuántos potreros sacar para pastoreo rotacional y cuánto alambre necesitás.</p>
+  <label>Nombre del plano</label><input id="pl_nm" value="${esc(p.name)}" placeholder="Ej. Lote de 5 manzanas">
   <label>¿Cómo registrás el terreno?</label>${sel("pl_mode",p.mode,[["der","Con los lados del plano (distancia y rumbo)"],["rec","Un rectángulo (largo y ancho)"],["are","Solo sé el área"]])}
   <div id="pl_m1" style="display:${p.mode==="der"?"block":"none"}"><label>Un lado por línea</label><textarea id="pl_tx" rows="7" style="width:100%;font-size:15px" placeholder="114.48 N 72 11 53.26 E&#10;128.39 N 71 50 50.25 E&#10;127.26 S 30 11 29.84 E">${esc(p.txt)}</textarea><p class="mu" style="margin:2px 0 8px">Distancia en metros, N o S, grados minutos segundos, E u O. Así viene en tu plano.</p></div>
   <div id="pl_m2" style="display:${p.mode==="rec"?"block":"none"}"><label>Largo (m)</label>${inp("pl_lg",p.lg)}<label>Ancho (m)</label>${inp("pl_an",p.an)}</div>
@@ -1940,10 +1946,12 @@ function fPlano(){const p=plGet(),sel=(id,v,o)=>`<select id="${id}">${o.map(x=>`
   <h2 style="font-size:16px;margin:16px 0 4px">Materiales</h2>
   <label>Hilos de alambre</label>${inp("pl_str",p.str)}<label>Separación entre postes (m)</label>${inp("pl_sp",p.sp)}<label>Desperdicio (%)</label>${inp("pl_w",p.waste)}<label>Metros por rollo</label>${inp("pl_roll",p.roll)}<label>Portones (vacío = uno por potrero)</label>${inp("pl_g",p.gates)}
   <label>¿El perímetro ya está cercado?</label>${sel("pl_per",p.per,[[1,"Sí, solo calcular las divisiones"],[0,"No, incluir el perímetro"]])}
-  <div id="pl_out" style="margin-top:14px"></div><br><button class="s" id="cx">Cerrar</button>`);
+  <div id="pl_out" style="margin-top:14px"></div><br><button class="s" id="pl_dup">📑 Duplicar este plano</button><br><br><button class="s" id="pl_del" style="color:#b3261e">🗑️ Eliminar este plano</button><br><br><button class="s" id="cx">‹ Volver a mis planos</button>`);
   const map={pl_nm:"name",pl_mode:"mode",pl_tx:"txt",pl_lg:"lg",pl_an:"an",pl_ha:"ha",pl_rest:"rest",pl_occ:"occ",pl_ann:"an_n",pl_kg:"kg",pl_n:"n",pl_lay:"lay",pl_lane:"lane",pl_or:"orient",pl_east:"east",pl_str:"str",pl_sp:"sp",pl_w:"waste",pl_roll:"roll",pl_g:"gates",pl_per:"per"};
-  Object.keys(map).forEach(id=>{const e=$(id);e.oninput=e.onchange=()=>{const o=S.meta.plano=S.meta.plano||{};let v=e.value;if(!["pl_nm","pl_tx","pl_mode","pl_lay"].includes(id))v=v===""?"":(["pl_or","pl_east","pl_per"].includes(id)?+v:numP(v));if(id==="pl_ha")v=v===""?"":numP(e.value);o[map[id]]=v;save();if(id==="pl_mode"){$("pl_m1").style.display=v==="der"?"block":"none";$("pl_m2").style.display=v==="rec"?"block":"none";$("pl_m3").style.display=v==="are"?"block":"none"}plOut()}});
-  $("cx").onclick=close;plOut()}
+  Object.keys(map).forEach(id=>{const e=$(id);e.oninput=e.onchange=()=>{const o=plCur();let v=e.value;if(!["pl_nm","pl_tx","pl_mode","pl_lay"].includes(id))v=v===""?"":(["pl_or","pl_east","pl_per"].includes(id)?+v:numP(v));if(id==="pl_ha")v=v===""?"":numP(e.value);o[map[id]]=v;save();if(id==="pl_mode"){$("pl_m1").style.display=v==="der"?"block":"none";$("pl_m2").style.display=v==="rec"?"block":"none";$("pl_m3").style.display=v==="are"?"block":"none"}plOut()}});
+  $("cx").onclick=fPlano;
+  $("pl_dup").onclick=()=>{const q=JSON.parse(JSON.stringify(plCur()));q.id=uid();q.name=plNm(q)+" (copia)";plAll().push(q);S.meta.planoSel=q.id;save();fPlanoEd()};
+  $("pl_del").onclick=()=>{if(!confirm("¿Eliminar «"+plNm(plCur())+"»? No se puede deshacer."))return;S.meta.planos=plAll().filter(x=>x.id!==S.meta.planoSel);S.meta.planoSel=null;save();fPlano()};plOut()}
 
 function dmSheet(k){const m=[...S.moves].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30),inv=invRows("mes"),t=today(),F=fem(),R={pre:0,ser:0,vac:0,par:0};F.forEach(a=>{const z=rs(a.id).st;if(z==="preñada")R.pre++;else if(z==="servida")R.ser++;else if(z==="vacía")R.vac++;else if(z==="parida")R.par++});
   const ret=S.events.filter(e=>until(e)&&until(e)>=t).sort((a,b)=>until(a).localeCompare(until(b)));
