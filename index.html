@@ -1175,7 +1175,7 @@ function showAct(opt){const a=$("act"),L=LIC||{st:"none"},id=devFmt(devId());
   $("act_ok").onclick=async()=>{const v=$("act_t").value.trim(),r=await licCheck(v),e=$("act_e");
     if(r.st==="ok"){const was=L.st==="ok"&&opt;LS("mt_lic",v.replace(/\s+/g,""));LIC=r;a.style.display="none";render();alert(was?"✅ Acceso renovado para "+r.name+(r.exp?"\nAhora tu acceso vence el "+fmt(r.exp)+" ("+r.days+" días)":"\nAhora tu acceso no tiene fecha de vencimiento"):"✅ Acceso activado para "+r.name+(r.exp?"\nVálido hasta el "+fmt(r.exp):"\nSin fecha de vencimiento"));return}
     e.style.display="block";e.textContent=r.st==="dev"?"Este código fue generado para otro teléfono. Enviá el ID que aparece arriba.":r.st==="exp"?"Este código ya venció ("+fmt(r.exp)+"). Pedí uno nuevo.":"Código inválido. Revisá que lo pegaste completo."}}
-const VERS="2026.11.35";
+const VERS="2026.11.36";
 const licCard=()=>{const L=LIC||{};if(L.st!=="ok")return"";return `<div class="card ${L.days!=null&&L.days<=30?"warn":""}"><div class="b">🔑 Acceso activado</div><div class="mu">${esc(L.name)} · ${L.exp?"vence el "+fmt(L.exp)+" ("+L.days+" días)":"sin vencimiento"}</div><div class="mu">ID: ${devFmt(devId())}</div><div class="mu">Versión de la App: <b data-ver>${VERS}</b></div>${S.meta.gb?'<div class="mu">🥛 Control de leche con el comprador: <b>activado</b> · <a data-gboff style="text-decoration:underline">desactivar</a></div>':""}<br><button class="s" id="lic_new">🔄 Verificar mi acceso</button></div>`};
 const licWarn=()=>{const L=LIC||{};return L.st==="ok"&&L.days!=null&&L.days<=30?`<div class="card warn" data-lic><div class="b">⏳ Tu acceso vence ${L.days<=0?"hoy":"en "+L.days+" días"}</div><div class="mu" style="color:inherit;opacity:.9">Fecha: ${fmt(L.exp)}. Tocá para verificar tu renovación › </div></div>`:""};
 document.addEventListener("visibilitychange",async()=>{if(document.visibilityState==="visible"&&LIC&&LIC.st==="ok"){await licInit();if(LIC.st!=="ok"){const n=await Promise.race([renCheck(),new Promise(r=>setTimeout(()=>r(null),4000))]);if(n){render();alert(renMsg(n))}else showAct()}else{render();renBg()}}});
@@ -1838,7 +1838,7 @@ function drawer(){const p=P(),A=act(),L=alerts(),inv=invRows("mes"),m=[...S.move
   const nb=$("mbtn");if(nb){const u=L.length;nb.innerHTML="☰"+(u?`<i>${u}</i>`:"")}}
 
 /* ===== Plano de la finca ===== */
-const PL_MZ=6987,PLD={mode:"der",name:"",txt:"",lg:100,an:50,ha:"",rest:33,occ:3,an_n:"",kg:400,lay:"auto",n:"",lane:5,orient:0,east:0,str:3,sp:8,waste:10,roll:400,gates:"",per:1};
+const PL_MZ=6987,PLD={mode:"fan",name:"",txt:"",lg:100,an:50,ha:"",rest:33,occ:3,an_n:"",kg:400,lay:"auto",n:"",lane:5,orient:0,east:0,str:3,sp:8,waste:10,roll:400,gates:"",per:1};
 const plAll=()=>{if(!Array.isArray(S.meta.planos))S.meta.planos=[];if(S.meta.plano){S.meta.planos.push({id:uid(),...S.meta.plano});delete S.meta.plano}return S.meta.planos};
 const plCur=()=>plAll().find(x=>x.id===S.meta.planoSel)||null,plGet=()=>Object.assign({},PLD,plCur()||{});
 function plParse(txt){const R=[],bad=[];String(txt||"").split(/\n/).forEach((ln,i)=>{if(!ln.trim())return;
@@ -1861,7 +1861,14 @@ function plShape(p){let P=null,info={};
     const pts=[[0,0]];R.forEach(r=>{const q=pts[pts.length-1];pts.push([q[0]+r.d*Math.sin(r.az*Math.PI/180),q[1]+r.d*Math.cos(r.az*Math.PI/180)])});
     const per=R.reduce((a,r)=>a+r.d,0),e=Math.hypot(pts[pts.length-1][0],pts[pts.length-1][1]);info.sides=R.length;info.perim=per;info.err=e;
     P=e<per*.015?pts.slice(0,-1):pts;if(e>=per*.015)info.open=1}
-  else if(p.mode==="rec"){const a=+p.lg,b=+p.an;if(!(a>0&&b>0))return{info};P=[[0,0],[a,0],[a,b],[0,b]];info.perim=2*(a+b);info.err=0}
+  else if(p.mode==="fan"){const n=Math.max(3,Math.min(8,Math.round(+p.ns||4))),sd=[],d=[];for(let i=0;i<n;i++)sd.push(numP((p.s||[])[i])||0);for(let k=3;k<n;k++)d[k]=numP((p.dg||[])[k-3])||0;
+    if(sd.some(x=>!(x>0))||d.some((x,k)=>k>=3&&!(x>0)))return{info};
+    const D=k=>k===2?sd[0]:k===n?sd[n-1]:d[k];const Q=[[0,0],[sd[0],0]];let ang=0;
+    for(let k=3;k<=n;k++){const a=D(k-1),c=D(k),b=sd[k-2],cs=(a*a+c*c-b*b)/(2*a*c);if(Math.abs(cs)>1)return{info:{...info,err2:"Las medidas no cuadran: el lado "+(k-1)+" no puede ser tan "+(b>a+c?"largo":"corto")+" con esas diagonales. Revisá las medidas."}};ang+=Math.acos(cs);Q.push([c*Math.cos(ang),c*Math.sin(ang)])}
+    P=Q;info.perim=sd.reduce((x,y)=>x+y,0);info.err=0}
+  else if(p.mode==="rec"){const a=numP(p.lg),b=numP(p.an);if(!(a>0&&b>0))return{info};P=[[0,0],[a,0],[a,b],[0,b]];info.perim=2*(a+b);info.err=0}
+  else if(p.mode==="trap"){const a=numP(p.ta),b=numP(p.tb),h=numP(p.th);if(!(a>0&&b>0&&h>0))return{info};const o=(a-b)/2;P=[[0,0],[a,0],[a-Math.min(o,a),h],[Math.max(o,0),h]];if(o<0)P=[[-o,0],[a-o,0],[b,h],[0,h]];info.perim=a+b+2*Math.hypot(Math.abs(o),h);info.err=0}
+  else if(p.mode==="pot"){const L=(p.ex||[]).map(q=>({q,a:plShape(q).area||0}));const t=L.reduce((x,y)=>x+y.a,0);return{info:{...info,only:1,pot:1,L},area:t>0?t:0}}
   else{const h=numP(p.ha)||0;if(!(h>0))return{info};return{info:{...info,only:1},area:h*PL_MZ}}
   let A=plArea(P);if(A<0){P=P.slice().reverse();A=-A}
   if(!(A>1))return{info};if(info.perim==null||p.mode==="der"&&info.open){let q=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];q+=Math.hypot(a[0]-b[0],a[1]-b[1])}info.perim=q}
@@ -1904,37 +1911,67 @@ function plRep(sh,d,m,p){const mz=v=>(v/PL_MZ).toFixed(2),f0=v=>Math.round(v).to
 function plPng(sh,d){const c=plPrims(sh,d,900,700),svg=chartSVG(c).replace("<svg ",'<svg width="'+c.w*2+'" height="'+c.h*2+'" ').replace(/<text /g,'<text fill="#333" ').replace("</svg>","</svg>"),
   img=new Image();img.onload=()=>{const cv=document.createElement("canvas");cv.width=c.w*2;cv.height=c.h*2;const x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,cv.width,cv.height);x.drawImage(img,0,0);cv.toBlob(b=>{if(!b)return alert("No se pudo crear la imagen");shareFile(new File([b],"plano-finca-"+today()+".png",{type:"image/png"}))},"image/png")};
   img.onerror=()=>alert("No se pudo crear la imagen");img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)}
+const PLM=[["fan","Medir lados y diagonales (terreno irregular)"],["rec","Rectángulo (largo y ancho)"],["trap","Trapecio (dos lados paralelos y su distancia)"],["der","Con el plano (distancia y rumbo)"],["are","Solo sé el área"]];
+const PLPAS={bra:["Brachiaria (Mulato, Toledo)",35,50],est:["Estrella africana",28,45],mom:["Mombasa o Tanzania",30,45],tai:["Taiwán o king grass",45,60],nat:["Pasto natural",45,70]},PLCT={ord:["Vacas en ordeño",1],dp:["Doble propósito",2],car:["Carne o levante",3]};
+function plFields(o,pre){const m=o.mode||"fan",inp=(id,v,l)=>`<label>${l}</label><input id="${pre}${id}" inputmode="decimal" value="${esc(v==null?"":v)}">`;
+  if(m==="fan"){const n=Math.max(3,Math.min(8,Math.round(+o.ns||4))),s=o.s||[],d=o.dg||[];let h=`<label>¿Cuántos lados tiene el terreno?</label><select id="${pre}ns">${[3,4,5,6,7,8].map(k=>`<option ${k===n?"selected":""}>${k}</option>`).join("")}</select><p class="mu" style="margin:2px 0 8px">Numerá las esquinas 1, 2, 3… yendo alrededor del terreno. Medí cada lado en metros y las diagonales que salen de la esquina 1.</p>`;
+    for(let i=0;i<n;i++)h+=inp("s"+i,s[i],`Lado ${i+1}: de la esquina ${i+1} a la ${i+2>n?1:i+2} (m)`);
+    for(let k=3;k<n;k++)h+=inp("d"+k,d[k-3],`Diagonal: de la esquina 1 a la ${k} (m)`);return h}
+  if(m==="rec")return inp("lg",o.lg,"Largo (m)")+inp("an",o.an,"Ancho (m)");
+  if(m==="trap")return inp("ta",o.ta,"Lado paralelo 1 (m)")+inp("tb",o.tb,"Lado paralelo 2 (m)")+inp("th",o.th,"Distancia entre los dos lados (m)")+`<p class="mu" style="margin:2px 0 8px">El área es exacta. El dibujo es aproximado porque los lados inclinados no se miden.</p>`;
+  if(m==="der")return `<label>Un lado por línea</label><textarea id="${pre}tx" rows="7" style="width:100%;font-size:15px" placeholder="114.48 N 72 11 53.26 E&#10;128.39 N 71 50 50.25 E&#10;127.26 S 30 11 29.84 E">${esc(o.txt||"")}</textarea><p class="mu" style="margin:2px 0 8px">Distancia en metros, N o S, grados minutos segundos, E u O. Así viene en tu plano.</p>`;
+  if(m==="are")return inp("ha",o.ha,"Área en manzanas")+`<p class="mu" style="margin:2px 0 8px">1 manzana = ${PL_MZ.toLocaleString("es-NI")} m².</p>`;
+  return `<p class="mu">Agregá abajo cada potrero que ya tenés y medilo. La App suma las áreas.</p>`}
+function plMF(o,pre,pot){const m=o.mode||"fan";return `<label>¿Cómo registrás el terreno?</label><select id="${pre}mode">${(pot?[["pot","Varios potreros (sumo las áreas)"]]:[]).concat(PLM).map(x=>`<option value="${x[0]}" ${m===x[0]?"selected":""}>${x[1]}</option>`).join("")}</select><div id="${pre}box">${plFields(o,pre)}</div>`}
+function plBind(o,pre,on){const g=id=>$(pre+id),box=()=>$(pre+"box");
+  g("mode").onchange=()=>{o.mode=g("mode").value;save();box().innerHTML=plFields(o,pre);bf();on()};
+  function bf(){const sv=(id,fn)=>{const e=g(id);if(e)e.oninput=e.onchange=()=>{fn(e.value);save();on()}};
+    const e=g("ns");if(e)e.onchange=()=>{o.ns=+e.value;save();box().innerHTML=plFields(o,pre);bf();on()};
+    for(let i=0;i<8;i++)sv("s"+i,v=>{o.s=o.s||[];o.s[i]=v});for(let k=3;k<8;k++)sv("d"+k,v=>{o.dg=o.dg||[];o.dg[k-3]=v});
+    ["lg","an","ta","tb","th","ha","tx"].forEach(k=>sv(k,v=>{o[k==="tx"?"txt":k]=v}))}
+  bf()}
 function plOut(){const p=plGet(),sh=plShape(p),box=$("pl_out");if(!box)return;const mz=v=>(v/PL_MZ).toFixed(2),f0=v=>Math.round(v).toLocaleString("es-NI"),f1=v=>(+v).toLocaleString("es-NI",{minimumFractionDigits:1,maximumFractionDigits:1});
   let h="";const sg=plSuggest(p);
   if(p.mode==="der"&&sh.info.bad&&sh.info.bad.length)h+=`<div class="card warn"><div class="mu">⚠️ No pude leer la línea ${sh.info.bad.join(", ")}. Escribila así: <b>114.48 N 72 11 53.26 E</b></div></div>`;
-  if(!sh.area){h+=`<p class="mu">${p.mode==="der"?"Escribí los lados del plano (mínimo 3) para calcular el área.":p.mode==="rec"?"Escribí el largo y el ancho.":"Escribí el área."}</p>`;box.innerHTML=h;return}
+  if(sh.info.err2)h+=`<div class="card warn"><div class="mu">⚠️ ${sh.info.err2}</div></div>`;
+  if(!sh.area&&!sh.info.pot){h+=`<p class="mu">${sh.info.err2?"":p.mode==="der"?"Escribí los lados del plano (mínimo 3) para calcular el área.":p.mode==="fan"?"Completá las medidas de los lados y las diagonales.":"Completá las medidas."}</p>`;box.innerHTML=h;return}
+  if(sh.info.pot)h+=`<div class="card"><div class="b">🌿 Potreros que ya tenés</div>${sh.info.L.length?`<table class="rt">${sh.info.L.map(x=>`<tr data-px="${x.q.id}" style="cursor:pointer"><td>${esc(x.q.name||"Potrero")} ›</td><td>${x.a?mz(x.a)+" mz":"Sin medir"}</td></tr>`).join("")}</table>`:'<p class="mu" style="margin:4px 0">Todavía no agregaste ninguno.</p>'}<br><button class="s" id="px_add">+ Agregar un potrero</button></div>`;
+  if(!sh.area){box.innerHTML=h;plPx();return}
   h+=`<div class="card"><div class="b">📐 Terreno</div><div style="font-size:22px;font-weight:700;margin:4px 0">${mz(sh.area)} mz</div><div class="mu">${f0(sh.area)} m² · ${(sh.area/10000).toFixed(2)} ha${sh.info.perim?" · perímetro "+f1(sh.info.perim)+" m":""}</div>`+
    (p.mode==="der"&&sh.info.sides?`<div class="mu" style="margin-top:4px">${sh.info.open?"⚠️ La figura no cierra: faltan "+f1(sh.info.err)+" m. La cerré con una línea recta; revisá los datos.":"✅ La figura cierra (error de "+f1(sh.info.err)+" m)."}</div>`:"")+`</div>`;
   const ua=(+p.an_n||0)*(+p.kg||0)/450,ha=sh.area/10000,car=ha?ua/ha:0,nn=Math.round(+p.n||sg||0);
-  h+=`<div class="card"><div class="b">🐄 Cuántos potreros te dan</div><div class="mu" style="margin:3px 0 6px">Descanso ${p.rest||"?"} días ÷ ocupación ${p.occ||"?"} días + 1</div>${sg?`<div style="font-size:20px;font-weight:700">${sg} potreros</div><div class="mu">Cada uno de ${f0(sh.area/sg)} m² (${mz(sh.area/sg)} mz)</div>`:'<div class="mu">Completá los días de descanso y de ocupación.</div>'}`+
-   (ua>0?`<div class="mu" style="margin-top:6px">Tus animales: ${ua.toFixed(1)} UA (1 UA = 450 kg) · carga de <b>${car.toFixed(1)} UA/ha</b>. ${car<1?"Es una carga baja: el pasto te va a sobrar.":car<=3?"Es una carga razonable para pasto mejorado con buen manejo.":"Es una carga alta: vas a necesitar más descanso, riego o complemento."}</div>`:"")+`</div>`;
+  h+=`<div class="card"><div class="b">🐄 Cuántos potreros te dan</div><div class="mu" style="margin:3px 0 6px">${p.pa&&p.ep?esc(PLPAS[p.pa][0])+" en época "+(p.ep==="s"?"seca":"lluviosa")+". ":""}Descanso ${p.rest||"?"} días ÷ ocupación ${p.occ||"?"} días + 1</div>${sg?`<div style="font-size:20px;font-weight:700">${sg} potreros</div><div class="mu">Cada uno de ${f0(sh.area/sg)} m² (${mz(sh.area/sg)} mz)</div>${sg>20?`<div class="mu" style="margin-top:4px">⚠️ Son muchos potreros para cercar. Probá con más días de ocupación o con menos días de descanso.</div>`:""}`:'<div class="mu">Completá los días de descanso y de ocupación.</div>'}`+
+   (ua>0?`<div class="mu" style="margin-top:6px">Tus animales: ${ua.toFixed(1)} UA (1 UA = 450 kg) · carga de <b>${car.toFixed(1)} UA/ha</b>. ${car<1?"Es una carga baja: el pasto te va a sobrar.":car<=3?"Es una carga razonable para pasto mejorado con buen manejo. Cada potrero necesita agua y sombra.":"Es una carga alta: vas a necesitar más descanso, riego o complemento."}</div>`:"")+`</div>`;
   if(sh.P){const d=plDesign(sh,p),m=plMat(d,sh,p);
     if(d){h+=`<div class="chart"><div class="ct">Diseño: ${d.n} potreros${d.lay==="lane"?" con callejón de "+d.laneW+" m":" en franjas"}</div>${chartSVG(plPrims(sh,d,515,420))}</div>`;
       h+=`<div class="card"><div class="b">Áreas</div><table class="rt">${d.paddocks.map(q=>`<tr><td>Potrero ${q.num}</td><td>${f0(q.area)} m² · ${mz(q.area)} mz</td></tr>`).join("")}${d.lane?`<tr><td>Callejón</td><td>${f0(d.laneA)} m²</td></tr>`:""}</table></div>`;
       h+=`<div class="card"><div class="b">🧵 Alambre y materiales</div><div class="mu" style="margin:3px 0 8px">Cerca nueva: <b>${f1(d.fence)} m</b>${+p.per?"":" + perímetro "+f1(sh.info.perim)+" m"}</div><table class="rt"><tr><td>Alambre (${m.str} hilos, ${Math.round(m.w*100)}% de desperdicio)</td><td><b>${f0(m.wire)} m</b></td></tr><tr><td>Rollos de ${m.rl} m</td><td><b>${m.rolls}</b></td></tr><tr><td>Postes (cada ${m.sp} m)</td><td><b>${m.posts}</b></td></tr><tr><td>Aisladores</td><td><b>${m.ins}</b></td></tr><tr><td>Portones</td><td><b>${m.gates}</b></td></tr></table></div>`;
       h+=`<button id="pl_pdf">📄 Reporte en PDF</button><br><br><button class="s" id="pl_png">🖼️ Compartir imagen del plano</button>`}
     else h+=`<p class="mu">Elegí cuántos potreros querés para dibujar el diseño.</p>`}
-  else if(sh.info.only)h+=`<p class="mu">Con solo el área no se puede dibujar. Si querés el dibujo y el alambre, usá los lados del plano o un rectángulo.</p>`;
-  box.innerHTML=h;
+  else if(sh.info.only)h+=`<p class="mu">Con solo el área no se puede dibujar. Si querés el dibujo y el alambre, medí lados y diagonales, o usá un rectángulo.</p>`;
+  box.innerHTML=h;plPx();
   if($("pl_pdf")){const d=plDesign(sh,p),m=plMat(d,sh,p);$("pl_pdf").onclick=()=>sharePDF("plano-finca-"+today()+".pdf",plRep(sh,d,m,p));$("pl_png").onclick=()=>plPng(sh,d)}}
+function plPx(){const a=$("px_add");if(a)a.onclick=()=>{const q={id:uid(),name:"Potrero "+((plCur().ex||[]).length+1),mode:"fan"};(plCur().ex=plCur().ex||[]).push(q);save();fPlanoItem(q.id)};document.querySelectorAll("[data-px]").forEach(r=>r.onclick=()=>fPlanoItem(r.dataset.px))}
 function plNm(q){return q.name||"Plano sin nombre"}
 function fPlano(){const L=plAll(),mz=v=>(v/PL_MZ).toFixed(2);
   sheet(`<h1>🗺️ Planos de la finca</h1><p class="mu">Guardá varios terrenos y calculá en cada uno el área, los potreros y el alambre. Tus datos se guardan solo en este teléfono.</p>${L.length?L.map(q=>{const p=Object.assign({},PLD,q),sh=plShape(p),n=sh.area?(Math.round(+p.n||plSuggest(p)||0)):0;return `<div class="card sv" data-pl="${q.id}"><div class="sx"><div class="row"><span class="b">${esc(plNm(q))}</span><b>${sh.area?mz(sh.area)+" mz":"Sin área"}</b></div><div class="mu">${sh.area?(n?n+" potreros · ":"")+Math.round(sh.area).toLocaleString("es-NI")+" m²":"Tocá para registrar el terreno"}</div></div></div>`}).join(""):'<p class="mu">Todavía no tenés planos.</p>'}<button id="pl_new">+ Nuevo plano</button><br><br><button class="s" id="cx">Cerrar</button>`);
   document.querySelectorAll("[data-pl]").forEach(c=>c.onclick=()=>{S.meta.planoSel=c.dataset.pl;save();fPlanoEd()});
   $("pl_new").onclick=()=>{const q={id:uid(),name:"Plano "+(L.length+1)};L.push(q);S.meta.planoSel=q.id;save();fPlanoEd()};$("cx").onclick=()=>{close();render()}}
-function fPlanoEd(){if(!plCur())return fPlano();const p=plGet(),sel=(id,v,o)=>`<select id="${id}">${o.map(x=>`<option value="${x[0]}" ${String(v)===String(x[0])?"selected":""}>${x[1]}</option>`).join("")}</select>`,inp=(id,v,ph,w)=>`<input id="${id}" inputmode="decimal" value="${esc(v==null?"":v)}" placeholder="${ph||""}">`;
+function fPlanoItem(id){const pl=plCur(),it=(pl.ex||[]).find(x=>x.id===id);if(!it)return fPlanoEd();
+  sheet(`<h1>🌿 ${esc(it.name||"Potrero")}</h1><label>Nombre del potrero</label><input id="pi_nm" value="${esc(it.name||"")}" placeholder="Ej. Potrero del río">${plMF(it,"pi_",0)}<div id="pi_out" style="margin-top:12px"></div><br><button id="ok">Listo</button><br><br><button class="s" id="pi_del" style="color:#b3261e">🗑️ Eliminar este potrero</button>`);
+  const out=()=>{const sh=plShape(it);$("pi_out").innerHTML=sh.info.err2?`<div class="card warn"><div class="mu">⚠️ ${sh.info.err2}</div></div>`:sh.area?`<div class="card"><div class="b">${(sh.area/PL_MZ).toFixed(2)} mz</div><div class="mu">${Math.round(sh.area).toLocaleString("es-NI")} m²${sh.info.perim?" · perímetro "+Math.round(sh.info.perim).toLocaleString("es-NI")+" m":""}</div></div>`:'<p class="mu">Completá las medidas.</p>'};
+  $("pi_nm").oninput=()=>{it.name=$("pi_nm").value;save()};plBind(it,"pi_",out);out();
+  $("ok").onclick=fPlanoEd;$("pi_del").onclick=()=>{if(!confirm("¿Eliminar este potrero?"))return;pl.ex=pl.ex.filter(x=>x.id!==id);save();fPlanoEd()}}
+function plCrit(){const o=plCur(),r=PLPAS[o.pa],e=o.ep==="s"?2:1,c=PLCT[o.ct];if(!r)return;o.rest=r[e];if(c)o.occ=c[1];save();if($("pl_rest"))$("pl_rest").value=o.rest;if($("pl_occ"))$("pl_occ").value=o.occ!=null?o.occ:""}
+function fPlanoEd(){if(!plCur())return fPlano();const p=plGet(),sel=(id,v,o)=>`<select id="${id}">${o.map(x=>`<option value="${x[0]}" ${String(v)===String(x[0])?"selected":""}>${x[1]}</option>`).join("")}</select>`,inp=(id,v,ph)=>`<input id="${id}" inputmode="decimal" value="${esc(v==null?"":v)}" placeholder="${ph||""}">`;
   sheet(`<h1>🗺️ ${esc(plNm(p))}</h1><p class="mu">Calculá el área del terreno, cuántos potreros sacar para pastoreo rotacional y cuánto alambre necesitás.</p>
   <label>Nombre del plano</label><input id="pl_nm" value="${esc(p.name)}" placeholder="Ej. Lote de 5 manzanas">
-  <label>¿Cómo registrás el terreno?</label>${sel("pl_mode",p.mode,[["der","Con los lados del plano (distancia y rumbo)"],["rec","Un rectángulo (largo y ancho)"],["are","Solo sé el área"]])}
-  <div id="pl_m1" style="display:${p.mode==="der"?"block":"none"}"><label>Un lado por línea</label><textarea id="pl_tx" rows="7" style="width:100%;font-size:15px" placeholder="114.48 N 72 11 53.26 E&#10;128.39 N 71 50 50.25 E&#10;127.26 S 30 11 29.84 E">${esc(p.txt)}</textarea><p class="mu" style="margin:2px 0 8px">Distancia en metros, N o S, grados minutos segundos, E u O. Así viene en tu plano.</p></div>
-  <div id="pl_m2" style="display:${p.mode==="rec"?"block":"none"}"><label>Largo (m)</label>${inp("pl_lg",p.lg)}<label>Ancho (m)</label>${inp("pl_an",p.an)}</div>
-  <div id="pl_m3" style="display:${p.mode==="are"?"block":"none"}"><label>Área en manzanas</label>${inp("pl_ha",p.ha?+(p.ha):"","Ej. 5.05")}<p class="mu" style="margin:2px 0 8px">1 manzana = ${PL_MZ.toLocaleString("es-NI")} m².</p></div>
+  ${plMF(p,"pl_",1)}
   <h2 style="font-size:16px;margin:16px 0 4px">Pastoreo</h2>
+  <label>Tipo de pasto</label><select id="pl_pa"><option value="">Elegí (opcional)</option>${Object.entries(PLPAS).map(([k,v])=>`<option value="${k}" ${p.pa===k?"selected":""}>${v[0]}</option>`).join("")}</select>
+  <label>Época del año</label>${sel("pl_ep",p.ep||"",[["","Elegí (opcional)"],["ll","Lluviosa (invierno)"],["s","Seca (verano)"]])}
+  <label>Tipo de ganado</label><select id="pl_ct"><option value="">Elegí (opcional)</option>${Object.entries(PLCT).map(([k,v])=>`<option value="${k}" ${p.ct===k?"selected":""}>${v[0]}</option>`).join("")}</select>
+  <p class="mu" style="margin:2px 0 8px">Al elegir, la App rellena los días de abajo con valores de referencia. Son orientativos: ajustalos según tu pasto y tu clima, y confirmalos con un técnico.</p>
   <label>Días de descanso del pasto</label>${inp("pl_rest",p.rest)}<label>Días que ocupan cada potrero</label>${inp("pl_occ",p.occ)}
   <label>Cantidad de animales (opcional)</label>${inp("pl_ann",p.an_n)}<label>Peso promedio (kg)</label>${inp("pl_kg",p.kg)}
   <h2 style="font-size:16px;margin:16px 0 4px">Diseño</h2>
@@ -1947,12 +1984,13 @@ function fPlanoEd(){if(!plCur())return fPlano();const p=plGet(),sel=(id,v,o)=>`<
   <label>Hilos de alambre</label>${inp("pl_str",p.str)}<label>Separación entre postes (m)</label>${inp("pl_sp",p.sp)}<label>Desperdicio (%)</label>${inp("pl_w",p.waste)}<label>Metros por rollo</label>${inp("pl_roll",p.roll)}<label>Portones (vacío = uno por potrero)</label>${inp("pl_g",p.gates)}
   <label>¿El perímetro ya está cercado?</label>${sel("pl_per",p.per,[[1,"Sí, solo calcular las divisiones"],[0,"No, incluir el perímetro"]])}
   <div id="pl_out" style="margin-top:14px"></div><br><button class="s" id="pl_dup">📑 Duplicar este plano</button><br><br><button class="s" id="pl_del" style="color:#b3261e">🗑️ Eliminar este plano</button><br><br><button class="s" id="cx">‹ Volver a mis planos</button>`);
-  const map={pl_nm:"name",pl_mode:"mode",pl_tx:"txt",pl_lg:"lg",pl_an:"an",pl_ha:"ha",pl_rest:"rest",pl_occ:"occ",pl_ann:"an_n",pl_kg:"kg",pl_n:"n",pl_lay:"lay",pl_lane:"lane",pl_or:"orient",pl_east:"east",pl_str:"str",pl_sp:"sp",pl_w:"waste",pl_roll:"roll",pl_g:"gates",pl_per:"per"};
-  Object.keys(map).forEach(id=>{const e=$(id);e.oninput=e.onchange=()=>{const o=plCur();let v=e.value;if(!["pl_nm","pl_tx","pl_mode","pl_lay"].includes(id))v=v===""?"":(["pl_or","pl_east","pl_per"].includes(id)?+v:numP(v));if(id==="pl_ha")v=v===""?"":numP(e.value);o[map[id]]=v;save();if(id==="pl_mode"){$("pl_m1").style.display=v==="der"?"block":"none";$("pl_m2").style.display=v==="rec"?"block":"none";$("pl_m3").style.display=v==="are"?"block":"none"}plOut()}});
+  const map={pl_nm:"name",pl_ann:"an_n",pl_kg:"kg",pl_rest:"rest",pl_occ:"occ",pl_n:"n",pl_lay:"lay",pl_lane:"lane",pl_or:"orient",pl_east:"east",pl_str:"str",pl_sp:"sp",pl_w:"waste",pl_roll:"roll",pl_g:"gates",pl_per:"per"};
+  Object.keys(map).forEach(id=>{const e=$(id);e.oninput=e.onchange=()=>{const o=plCur();let v=e.value;if(!["pl_nm","pl_lay"].includes(id))v=v===""?"":(["pl_or","pl_east","pl_per"].includes(id)?+v:numP(v));o[map[id]]=v;save();plOut()}});
+  [["pl_pa","pa"],["pl_ep","ep"],["pl_ct","ct"]].forEach(([id,k])=>{$(id).onchange=()=>{plCur()[k]=$(id).value;plCrit();plOut()}});
+  plBind(plCur(),"pl_",plOut);
   $("cx").onclick=fPlano;
-  $("pl_dup").onclick=()=>{const q=JSON.parse(JSON.stringify(plCur()));q.id=uid();q.name=plNm(q)+" (copia)";plAll().push(q);S.meta.planoSel=q.id;save();fPlanoEd()};
+  $("pl_dup").onclick=()=>{const q=JSON.parse(JSON.stringify(plCur()));q.id=uid();q.name=plNm(q)+" (copia)";(q.ex||[]).forEach(x=>x.id=uid());plAll().push(q);S.meta.planoSel=q.id;save();fPlanoEd()};
   $("pl_del").onclick=()=>{if(!confirm("¿Eliminar «"+plNm(plCur())+"»? No se puede deshacer."))return;S.meta.planos=plAll().filter(x=>x.id!==S.meta.planoSel);S.meta.planoSel=null;save();fPlano()};plOut()}
-
 function dmSheet(k){const m=[...S.moves].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30),inv=invRows("mes"),t=today(),F=fem(),R={pre:0,ser:0,vac:0,par:0};F.forEach(a=>{const z=rs(a.id).st;if(z==="preñada")R.pre++;else if(z==="servida")R.ser++;else if(z==="vacía")R.vac++;else if(z==="parida")R.par++});
   const ret=S.events.filter(e=>until(e)&&until(e)>=t).sort((a,b)=>until(a).localeCompare(until(b)));
   const B={inv:["📦 Inventario del mes",`<table class="rt">${inv.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table>`],
